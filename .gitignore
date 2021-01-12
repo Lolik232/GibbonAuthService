@@ -1,0 +1,7 @@
+#ide files
+.idea
+
+
+#prod config files
+config.yml
+config.yaml
