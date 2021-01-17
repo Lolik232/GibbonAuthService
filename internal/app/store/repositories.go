@@ -8,30 +8,22 @@ import (
 //UserRepository interface
 type (
 	UserRepository interface {
-		//CRUD methods
-		FindById(ctx context.Context, id string, params *UserFields) (*model.User, error)
-		Update(ctx context.Context, userID string, user *model.User) error
-		Create(ctx context.Context, user *model.User) (string, error)
-		//
+		UserCrud
 		UserSessionsFinder
-		//
-		FindUserClientRoles(ctx context.Context, userID, clientID string) ([]model.UserRole, error)
-		//Utility functions
-		UserAuthenticator
-		//
 		UserPassChecker
 	}
-	UserAuthenticator interface {
-		Authenticate(ctx context.Context, login, passwordHash string) (*model.User, error)
-		AuthenticateByName(ctx context.Context, username, passwordHash string) (*model.User, error)
-		AuthenticateByEmail(ctx context.Context, email, passwordHash string) (*model.User, error)
-		AuthenticateByID(ctx context.Context, userID, passwordHash string) (*model.User, error)
+	UserCrud interface {
+		FindById(ctx context.Context, id string, params *UserFields) (*model.User, error)
+		FindByName(ctx context.Context, name string, params *UserFields) (*model.User, error)
+		FindByEmail(ctx context.Context, name string, params *UserFields) (*model.User, error)
+		FindUserClientRoles(ctx context.Context, userID, clientID string) ([]model.UserRole, error)
+		Update(ctx context.Context, userID string, user *model.User) error
+		Create(ctx context.Context, user *model.User) (string, error)
 	}
 	UserPassChecker interface {
-		Authenticate(ctx context.Context, login, passwordHash string) (*model.User, error)
-		AuthenticateByName(ctx context.Context, username, passwordHash string) (*model.User, error)
-		AuthenticateByEmail(ctx context.Context, email, passwordHash string) (*model.User, error)
-		AuthenticateByID(ctx context.Context, userID, passwordHash string) (*model.User, error)
+		CheckPassByID(ctx context.Context, userID, passwordHash string) error
+		CheckPassByName(ctx context.Context, username, passwordHash string) error
+		CheckPassByEmail(ctx context.Context, email, passwordHash string) error
 	}
 	UserSessionsFinder interface {
 		FindSessions(ctx context.Context, id string) (*[]model.UserSession, error)

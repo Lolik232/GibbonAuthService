@@ -1,5 +1,7 @@
 package errors
 
+//TODO: REFACTOR THIS TO TWO ERROR PACKAGES WITH INTERNAL ERROR AND HTTP-ERROR FOR CLEAN ARCH
+
 import (
 	"fmt"
 	"net/http"
@@ -14,16 +16,12 @@ const (
 	BadRequest = ErrorType(http.StatusBadRequest)
 	//InvalidArgument ...
 	InvalidArgument = ErrorType(1)
-	//BadConnectionWithDatabase ...
-	BadConnectionWithDatabase = ErrorType(99)
 	//NotFound ...
 	NotFound = ErrorType(http.StatusNotFound)
 	//
 	InvalidPasswordOrUsername = ErrorType(http.StatusUnauthorized)
-	InvalidPassword           = ErrorType(http.StatusUnauthorized)
 	//InternalServerError ...
 	InternalServerError = ErrorType(http.StatusInternalServerError)
-	InvalidUserToken    = ErrorType(http.StatusUnauthorized)
 )
 
 var messages = map[ErrorType]string{
@@ -31,9 +29,7 @@ var messages = map[ErrorType]string{
 	InvalidArgument:           "Invalid argument.",
 	NotFound:                  "Not found.",
 	InternalServerError:       "Internal server error.",
-	InvalidUserToken:          "Invalid user token.",
 	InvalidPasswordOrUsername: "Invalid password or username. Check and try again.",
-	InvalidPassword:           "Invalid password. Check and try again.",
 }
 
 //ErrorType ...
@@ -44,6 +40,7 @@ type customError struct {
 	standartError error
 	contextInfo   errorContext
 }
+
 type errorContext struct {
 	Field   string
 	Message string

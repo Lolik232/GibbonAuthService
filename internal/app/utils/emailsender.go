@@ -9,7 +9,7 @@ import (
 )
 
 type IEmailSender interface {
-	Send(ctx context.Context, email, subject, msg string) error
+	Send(ctx context.Context, subject, email, msgtype, msg string) error
 }
 
 type EmailSender struct {

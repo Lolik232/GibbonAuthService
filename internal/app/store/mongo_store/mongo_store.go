@@ -5,7 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-//Store is mongoDB database storage
+//Store is a mongoDB database storage
 type Store struct {
 	db               *mongo.Database
 	userRepository   *UserRepo

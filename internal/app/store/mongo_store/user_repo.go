@@ -68,33 +68,32 @@ type (
 	}
 )
 
-func (u UserRepo) FindById(ctx context.Context, id string, params *store.UserFields) (*model.User, error) {
+func (u UserRepo) fetch(ctx context.Context, query bson.M, params *store.UserFields) (*UserClient, error) {
 	projection := bson.M{}
 	projection["username"] = params.UserName
 	projection["email"] = params.Email
 	projection["created_at"] = params.CreatedAt
 	projection["user_info"] = params.UserInfo
-	uid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, errors.InvalidArgument.Newf("Invalid userID: %s", id)
-	}
-	query := bson.M{"_id": uid}
 	var usr *UserClient
 	if params.UserSessions == false {
 		opt := options.FindOne().SetProjection(projection)
-		err = u.usersCol.FindOne(ctx, query, opt).Decode(&usr)
+		err := u.usersCol.FindOne(ctx, query, opt).Decode(&usr)
 		if err != nil {
 			switch err {
 			case mongo.ErrNoDocuments:
-				return nil, errors.InvalidArgument.Newf("Invalid userID: %s", id)
+				return nil, errors.InvalidArgument.Newf("")
 			case mongo.ErrClientDisconnected:
 				return nil, errors.InternalServerError.New("")
 			}
 		}
 	} else {
 		proj := bson.D{{"$project", projection}}
-		match := bson.D{{"$match", bson.D{{"_id", uid}}}}
-		pip := bson.D{{"$lookup", bson.D{{"from", "clients"}, {"localField", "user_sessions.client_id"}, {"foreignField", "_id"}, {"as", "user_sessions"}}}}
+		match := bson.D{{"$match", query}}
+		pip := bson.D{{"$lookup", bson.D{
+			{"from", "clients"},
+			{"localField", "user_sessions.client_id"},
+			{"foreignField", "_id"},
+			{"as", "user_sessions"}}}}
 		cur, err := u.usersCol.Aggregate(ctx, mongo.Pipeline{match, pip, proj})
 		defer cur.Close(ctx)
 		if err != nil {
@@ -109,11 +108,45 @@ func (u UserRepo) FindById(ctx context.Context, id string, params *store.UserFie
 				return nil, errors.InternalServerError.New("")
 			}
 		} else {
-			return nil, errors.InvalidArgument.Newf("Invalid userID %s", id)
+			return nil, errors.InvalidArgument.Newf("")
 		}
+	}
+	return usr, nil
+}
+
+func (u UserRepo) FindById(ctx context.Context, id string, params *store.UserFields) (*model.User, error) {
+	uid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.InvalidArgument.Newf("Invalid userID: %s", id)
+	}
+	query := bson.M{"_id": uid}
+	usr, err := u.fetch(ctx, query, params)
+	if err != nil {
+		return nil, err
 	}
 	return ToUserClient(usr), nil
 }
+func (u UserRepo) FindByName(ctx context.Context, username string, params *store.UserFields) (*model.User, error) {
+	query := bson.M{
+		"username": username,
+	}
+	usr, err := u.fetch(ctx, query, params)
+	if err != nil {
+		return nil, err
+	}
+	return ToUserClient(usr), nil
+}
+func (u UserRepo) FindByEmail(ctx context.Context, email string, params *store.UserFields) (*model.User, error) {
+	query := bson.M{
+		"email": email,
+	}
+	usr, err := u.fetch(ctx, query, params)
+	if err != nil {
+		return nil, err
+	}
+	return ToUserClient(usr), nil
+}
+
 func (u UserRepo) Create(ctx context.Context, user *model.User) (string, error) {
 	usr := ToDb(user)
 	*usr.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
@@ -125,13 +158,13 @@ func (u UserRepo) Create(ctx context.Context, user *model.User) (string, error) 
 		}
 	}
 	return cur.InsertedID.(primitive.ObjectID).Hex(), nil
+
 }
 func (u UserRepo) Update(ctx context.Context, userID string, user *model.User) error {
 	panic("implement me")
 }
 
 func (u UserRepo) FindSessions(ctx context.Context, id string) (*[]model.UserSession, error) {
-
 	panic("implement me")
 }
 func (u UserRepo) CheckSession(ctx context.Context, id string) error {
@@ -142,128 +175,7 @@ func (u UserRepo) FindUserClientRoles(ctx context.Context, userID, clientID stri
 	panic("implement me")
 }
 
-func (u UserRepo) Authenticate(ctx context.Context, login, passwordHash string) (*model.User, error) {
-	proj := bson.M{
-		"username": 1,
-		"email":    1,
-	}
-	opt := options.FindOne().SetProjection(proj)
-	query := bson.M{
-		"$or": bson.M{
-			"username": login,
-			"email":    login,
-		},
-		"password_hash": passwordHash,
-	}
-	var usr *UserClient
-	err := u.usersCol.FindOne(ctx, query, opt).Decode(&usr)
-	if err != nil {
-		switch err {
-		case mongo.ErrNoDocuments:
-			return nil, errors.InvalidPasswordOrUsername.New("")
-		case mongo.ErrClientDisconnected:
-			return nil, errors.InternalServerError.New("")
-		}
-	}
-	return ToUserClient(usr), nil
-}
-func (u UserRepo) AuthenticateByID(ctx context.Context, userID, passwordHash string) (*model.User, error) {
-	ID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return nil, errors.InvalidArgument.Newf("Invalid userID %s", userID)
-	}
-	proj := bson.M{
-		"username": 1,
-		"email":    1,
-	}
-	opt := options.FindOne().SetProjection(proj)
-	query := bson.M{
-		"_id":           ID,
-		"password_hash": passwordHash,
-	}
-	var usr *UserClient
-	err = u.usersCol.FindOne(ctx, query, opt).Decode(&usr)
-	if err != nil {
-		switch err {
-		case mongo.ErrNoDocuments:
-			return nil, errors.InvalidPassword.New("")
-		case mongo.ErrClientDisconnected:
-			return nil, errors.InternalServerError.New("")
-		}
-	}
-	return ToUserClient(usr), nil
-}
-func (u UserRepo) AuthenticateByEmail(ctx context.Context, email, passwordHash string) (*model.User, error) {
-	proj := bson.M{
-		"username": 1,
-		"email":    1,
-	}
-	opt := options.FindOne().SetProjection(proj)
-	query := bson.M{
-		"email":         email,
-		"password_hash": passwordHash,
-	}
-	var usr *UserClient
-	err := u.usersCol.FindOne(ctx, query, opt).Decode(&usr)
-	if err != nil {
-		switch err {
-		case mongo.ErrNoDocuments:
-			return nil, errors.InvalidPasswordOrUsername.New("")
-		case mongo.ErrClientDisconnected:
-			return nil, errors.InternalServerError.New("")
-		}
-	}
-	return ToUserClient(usr), nil
-}
-func (u UserRepo) AuthenticateByName(ctx context.Context, username, passwordHash string) (*model.User, error) {
-	proj := bson.M{
-		"username": 1,
-		"email":    1,
-	}
-	opt := options.FindOne().SetProjection(proj)
-	query := bson.M{
-		"username":      username,
-		"password_hash": passwordHash,
-	}
-	var usr *UserClient
-	err := u.usersCol.FindOne(ctx, query, opt).Decode(&usr)
-	if err != nil {
-		switch err {
-		case mongo.ErrNoDocuments:
-			return nil, errors.InvalidPasswordOrUsername.New("")
-		case mongo.ErrClientDisconnected:
-			return nil, errors.InternalServerError.New("")
-		}
-	}
-	return ToUserClient(usr), nil
-}
-
-func (u UserRepo) CheckPassword(ctx context.Context, login, passwordHash string) error {
-	proj := bson.M{
-		"username": 1,
-		"email":    1,
-	}
-	opt := options.FindOne().SetProjection(proj)
-	query := bson.M{
-		"$or": bson.M{
-			"username": login,
-			"email":    login,
-		},
-		"password_hash": passwordHash,
-	}
-	var usr *UserClient
-	err := u.usersCol.FindOne(ctx, query, opt).Decode(&usr)
-	if err != nil {
-		switch err {
-		case mongo.ErrNoDocuments:
-			return errors.InvalidPasswordOrUsername.New("")
-		case mongo.ErrClientDisconnected:
-			return errors.InternalServerError.New("")
-		}
-	}
-	return nil
-}
-func (u UserRepo) CheckPasswordById(ctx context.Context, userID, passwordHash string) error {
+func (u UserRepo) CheckPassByID(ctx context.Context, userID, passwordHash string) error {
 	ID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.InvalidArgument.Newf("Invalid userID %s", userID)
@@ -282,7 +194,7 @@ func (u UserRepo) CheckPasswordById(ctx context.Context, userID, passwordHash st
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
-			return errors.InvalidPassword.New("")
+			return errors.InvalidPasswordOrUsername.New("")
 		case mongo.ErrClientDisconnected:
 			return errors.InternalServerError.New("")
 		}
@@ -292,7 +204,7 @@ func (u UserRepo) CheckPasswordById(ctx context.Context, userID, passwordHash st
 	}
 	return nil
 }
-func (u UserRepo) CheckPasswordByName(ctx context.Context, username, passwordHash string) error {
+func (u UserRepo) CheckPassByName(ctx context.Context, username, passwordHash string) error {
 
 	query := bson.M{
 		"username":      username,
@@ -318,7 +230,7 @@ func (u UserRepo) CheckPasswordByName(ctx context.Context, username, passwordHas
 	}
 	return nil
 }
-func (u UserRepo) CheckPasswordByEmail(ctx context.Context, email, passwordHash string) error {
+func (u UserRepo) CheckPassByEmail(ctx context.Context, email, passwordHash string) error {
 	query := bson.M{
 		"email":         email,
 		"password_hash": passwordHash,

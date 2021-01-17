@@ -1,10 +1,12 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+)
 
 //Init func initialize a viper config from file
 func Init() error {
-	viper.AddConfigPath("./config")
+	viper.AddConfigPath("config")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
 	err := viper.ReadInConfig()
