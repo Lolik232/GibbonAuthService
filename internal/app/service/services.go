@@ -11,6 +11,7 @@ type (
 		UserCrud
 		UserSessionsFinder
 		UserAuthenticator
+		GenerateEmailConfToken(ctx context.Context, userID, email string) (string, error)
 	}
 
 	UserFinder interface {

@@ -1,39 +1,28 @@
-package errors
-
-//TODO: REFACTOR THIS TO TWO ERROR PACKAGES WITH INTERNAL ERROR AND HTTP-ERROR FOR CLEAN ARCH
+package types
 
 import (
 	"fmt"
-	"net/http"
-
 	"github.com/pkg/errors"
 )
 
 const (
-	//NoType ...
 	NoType = ErrorType(0)
-	//BadRequest ...
-	BadRequest = ErrorType(http.StatusBadRequest)
-	//InvalidArgument ...
-	InvalidArgument = ErrorType(1)
-	//NotFound ...
-	NotFound = ErrorType(http.StatusNotFound)
-	//
-	InvalidPasswordOrUsername = ErrorType(http.StatusUnauthorized)
-	//InternalServerError ...
-	InternalServerError = ErrorType(http.StatusInternalServerError)
+	ErrInvalidArgument
+	ErrInvalidPasswordOrUsername
+	ErrInvalidPassword
+	ErrDatabaseDown
+	ErrDuplicateEntry
 )
 
-var messages = map[ErrorType]string{
-	BadRequest:                "Bad request.",
-	InvalidArgument:           "Invalid argument.",
-	NotFound:                  "Not found.",
-	InternalServerError:       "Internal server error.",
-	InvalidPasswordOrUsername: "Invalid password or username. Check and try again.",
-}
-
-//ErrorType ...
 type ErrorType uint
+
+var messages = map[ErrorType]string{
+	ErrInvalidArgument:           "Invalid argument.",
+	ErrInvalidPassword:           "Invalid password.",
+	ErrInvalidPasswordOrUsername: "Invalid password or username. Check and try again.",
+	ErrDatabaseDown:              "Database down.",
+	ErrDuplicateEntry:            "Duplicate entry.",
+}
 
 type customError struct {
 	errorType     ErrorType
