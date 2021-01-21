@@ -1,7 +1,7 @@
 package mongo_store
 
 import (
-	errors "auth-server/internal/app"
+	errors "auth-server/internal/app/errors/types"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/store"
 	"context"
@@ -81,9 +81,9 @@ func (u UserRepo) fetch(ctx context.Context, query bson.M, params *store.UserFie
 		if err != nil {
 			switch err {
 			case mongo.ErrNoDocuments:
-				return nil, errors.InvalidArgument.Newf("")
+				return nil, errors.ErrInvalidArgument.Newf("")
 			case mongo.ErrClientDisconnected:
-				return nil, errors.InternalServerError.New("")
+				return nil, errors.ErrDatabaseDown.New("")
 			}
 		}
 	} else {
@@ -99,16 +99,16 @@ func (u UserRepo) fetch(ctx context.Context, query bson.M, params *store.UserFie
 		if err != nil {
 			switch err {
 			case mongo.ErrClientDisconnected:
-				return nil, errors.InternalServerError.New("")
+				return nil, errors.NoType.New("")
 			}
 		}
 		if cur != nil && cur.Next(ctx) {
 			err = cur.Decode(&usr)
 			if err != nil {
-				return nil, errors.InternalServerError.New("")
+				return nil, errors.NoType.New("")
 			}
 		} else {
-			return nil, errors.InvalidArgument.Newf("")
+			return nil, errors.ErrInvalidArgument.Newf("")
 		}
 	}
 	return usr, nil
@@ -117,13 +117,17 @@ func (u UserRepo) fetch(ctx context.Context, query bson.M, params *store.UserFie
 func (u UserRepo) FindById(ctx context.Context, id string, params *store.UserFields) (*model.User, error) {
 	uid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, errors.InvalidArgument.Newf("Invalid userID: %s", id)
+		return nil, errors.ErrInvalidArgument.Newf("Invalid userID: %s", id)
 	}
 	query := bson.M{"_id": uid}
 	usr, err := u.fetch(ctx, query, params)
 	if err != nil {
+		if errors.GetType(err) == errors.ErrInvalidArgument {
+			return nil, errors.ErrInvalidArgument.Wrapf(err, "Invalid userID sv", uid)
+		}
 		return nil, err
 	}
+
 	return ToUserClient(usr), nil
 }
 func (u UserRepo) FindByName(ctx context.Context, username string, params *store.UserFields) (*model.User, error) {
@@ -154,7 +158,7 @@ func (u UserRepo) Create(ctx context.Context, user *model.User) (string, error) 
 	if err != nil {
 		switch err {
 		case mongo.ErrNilValue, mongo.ErrNoDocuments, mongo.ErrClientDisconnected:
-			return "", errors.InternalServerError.New("")
+			return "", errors.ErrDatabaseDown.New("")
 		}
 	}
 	return cur.InsertedID.(primitive.ObjectID).Hex(), nil
@@ -178,7 +182,7 @@ func (u UserRepo) FindUserClientRoles(ctx context.Context, userID, clientID stri
 func (u UserRepo) CheckPassByID(ctx context.Context, userID, passwordHash string) error {
 	ID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return errors.InvalidArgument.Newf("Invalid userID %s", userID)
+		return errors.ErrInvalidArgument.Newf("Invalid userID %s", userID)
 	}
 	opt := options.FindOne().SetProjection(
 		bson.M{
@@ -194,13 +198,13 @@ func (u UserRepo) CheckPassByID(ctx context.Context, userID, passwordHash string
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
-			return errors.InvalidPasswordOrUsername.New("")
+			return errors.ErrInvalidPasswordOrUsername.New("")
 		case mongo.ErrClientDisconnected:
-			return errors.InternalServerError.New("")
+			return errors.ErrDatabaseDown.New("")
 		}
 	}
 	if user.ID.Hex() != userID {
-		return errors.InvalidArgument.New("")
+		return errors.NoType.New("")
 	}
 	return nil
 }
@@ -220,13 +224,13 @@ func (u UserRepo) CheckPassByName(ctx context.Context, username, passwordHash st
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
-			return errors.InvalidPasswordOrUsername.New("")
+			return errors.ErrInvalidPasswordOrUsername.New("")
 		case mongo.ErrClientDisconnected:
-			return errors.InternalServerError.New("")
+			return errors.ErrDatabaseDown.New("")
 		}
 	}
 	if usr.UserName != username {
-		return errors.InvalidPasswordOrUsername.New("")
+		return errors.ErrInvalidPasswordOrUsername.New("")
 	}
 	return nil
 }
@@ -245,13 +249,13 @@ func (u UserRepo) CheckPassByEmail(ctx context.Context, email, passwordHash stri
 	if err != nil {
 		switch err {
 		case mongo.ErrNoDocuments:
-			return errors.InvalidPasswordOrUsername.New("")
+			return errors.ErrInvalidPasswordOrUsername.New("")
 		case mongo.ErrClientDisconnected:
-			return errors.InternalServerError.New("")
+			return errors.ErrDatabaseDown.New("")
 		}
 	}
 	if usr.Email != email {
-		return errors.InvalidPasswordOrUsername.New("")
+		return errors.ErrInvalidPasswordOrUsername.New("")
 	}
 	return nil
 }

@@ -1,7 +1,7 @@
 package user_service
 
 import (
-	errors "auth-server/internal/app"
+	errors "auth-server/internal/app/errors/types"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/store"
 	"auth-server/internal/app/utils"
@@ -43,7 +43,7 @@ func (u UserService) FindUserByName(ctx context.Context, username string, fields
 		}
 		return usr, nil
 	}
-	err := errors.InvalidArgument.New("Username not be null!")
+	err := errors.ErrInvalidArgument.New("Username not be null!")
 	return nil, err
 }
 

@@ -1,7 +1,7 @@
 package emailsender
 
 import (
-	errors "auth-server/internal/app"
+	errors "auth-server/internal/app/errors/types"
 	"context"
 	"fmt"
 	"net/smtp"
@@ -41,9 +41,9 @@ func (e EmailSender) Send(ctx context.Context, subject, email, msgtype, msg stri
 	message += "\n\r" + msg
 	if err := smtp.SendMail(e.host+e.port, e.auth, e.companyEmail, []string{email}, []byte(message)); err != nil {
 		if _, ok := err.(*textproto.Error); ok {
-			return errors.InvalidArgument.Newf("Invalid email %s", email)
+			return errors.ErrInvalidArgument.Newf("Invalid email %s", email)
 		}
-		return errors.InternalServerError.New("")
+		return errors.NoType.New("")
 	}
 	return nil
 }
