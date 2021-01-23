@@ -1,6 +1,9 @@
 package error
 
-import "auth-server/internal/app/errors/types"
+import (
+	"auth-server/internal/app/errors/types"
+	"net/http"
+)
 
 type HTTPError struct {
 	Code    uint              `json:"code"`
@@ -10,21 +13,35 @@ type HTTPError struct {
 
 var (
 	codes = map[types.ErrorType]uint{
-		types.NoType:                       500,
+		types.NoType:                       http.StatusInternalServerError,
+		types.ErrDatabaseDown:              http.StatusInternalServerError,
 		types.ErrInvalidArgument:           1,
-		types.ErrDatabaseDown:              500,
-		types.ErrInvalidArgument:           500,
 		types.ErrDuplicateEntry:            5,
-		types.ErrInvalidPassword:           403,
-		types.ErrInvalidPasswordOrUsername: 403,
+		types.ErrInvalidPassword:           http.StatusUnauthorized,
+		types.ErrInvalidPasswordOrUsername: http.StatusUnauthorized,
 	}
 )
 
 func New(err error) *HTTPError {
+	if err == nil {
+		return &HTTPError{
+			Code:    codes[types.NoType],
+			Message: "Internal server error.",
+			Params:  nil,
+		}
+	}
 	errtype := types.GetType(err)
+	msg := ""
+	switch errtype {
+	//Users should not be aware of internal problems
+	case types.NoType, types.ErrDatabaseDown:
+		msg = "Internal server error,"
+	default:
+		msg = err.Error()
+	}
 	return &HTTPError{
 		Code:    codes[errtype],
-		Message: "",
+		Message: msg,
 		Params:  nil,
 	}
 }

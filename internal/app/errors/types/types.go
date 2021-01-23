@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	NoType = ErrorType(0)
+	NoType = ErrorType(iota)
 	ErrInvalidArgument
 	ErrInvalidPasswordOrUsername
 	ErrInvalidPassword

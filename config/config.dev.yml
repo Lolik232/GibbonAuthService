@@ -1,5 +1,12 @@
 port: 8000
 
+jwt:
+  key: "superKey"
+
+
+keys:
+  email_conf_key: "ab2dc433ed5d4a7472c0ad70566e168f924f2f5e907c6afcce7b93a771e0e9f7"
+
 mongo:
   uri: "mongodb://localhost:27017"
   username: "username"
