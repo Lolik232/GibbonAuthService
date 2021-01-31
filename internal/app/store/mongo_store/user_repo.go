@@ -64,11 +64,16 @@ type (
 	}
 	//
 	UserRepo struct {
+		store    *store.Store
 		usersCol *mongo.Collection
 	}
 )
 
 func (u UserRepo) fetch(ctx context.Context, query bson.M, params *store.UserFields) (*UserClient, error) {
+	if params == nil {
+		params = new(store.UserFields)
+	}
+
 	projection := bson.M{}
 	projection["username"] = params.UserName
 	projection["email"] = params.Email

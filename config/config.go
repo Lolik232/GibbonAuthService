@@ -4,10 +4,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	DEV bool = true
+)
+
 //Init func initialize a viper config from file
 func Init() error {
+	if DEV == true {
+		viper.SetConfigName("config.dev")
+	} else {
+		viper.SetConfigName("config")
+	}
 	viper.AddConfigPath("config")
-	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
 	err := viper.ReadInConfig()
 	if err != nil {

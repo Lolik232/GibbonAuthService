@@ -4,7 +4,8 @@ import (
 	errors "auth-server/internal/app/errors/types"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/store"
-	"auth-server/internal/app/utils"
+	"auth-server/internal/app/utils/emailsender"
+	"auth-server/internal/app/utils/validators"
 	"context"
 	"github.com/spf13/viper"
 	"log"
@@ -13,23 +14,25 @@ import (
 )
 
 type UserService struct {
-	store       store.Store
-	emailSender emailsender.IEmailSender
+	store         store.Store
+	emailSender   emailsender.IEmailSender
+	userValidator validators.IUserValidator
 }
 
-func New(emailSender emailsender.IEmailSender, store store.Store) (*UserService, error) {
+func New(emailSender emailsender.IEmailSender, store store.Store, uvalidator validators.IUserValidator) (*UserService, error) {
 	return &UserService{
-		store:       store,
-		emailSender: emailSender,
+		store:         store,
+		emailSender:   emailSender,
+		userValidator: uvalidator,
 	}, nil
 }
 
 func (u UserService) FindUserByID(ctx context.Context, userID string, fields *store.UserFields) (*model.User, error) {
-
 	usr, err := u.store.User().FindById(ctx, userID, fields)
 	if err != nil {
 		return nil, err
 	}
+	usr.Sanitize()
 	return usr, nil
 }
 
@@ -38,9 +41,12 @@ func (u UserService) FindUserByLogin(ctx context.Context, login string, fields *
 	var err error
 
 	if strings.Contains(login, "@") {
-		usr, err = u.store.User().FindByEmail(ctx, login, fields)
+		usr, err = u.FindUserByEmail(ctx, login, fields)
 	} else {
-		usr, err = u.store.User().FindByName(ctx, login, fields)
+		usr, err = u.FindUserByName(ctx, login, fields)
+	}
+	if usr != nil {
+		usr.Sanitize()
 	}
 	return usr, err
 }
@@ -51,6 +57,7 @@ func (u UserService) FindUserByName(ctx context.Context, username string, fields
 		if err != nil {
 			return nil, err
 		}
+		usr.Sanitize()
 		return usr, nil
 	}
 	err := errors.ErrInvalidArgument.New("Username not be null!")
@@ -58,23 +65,25 @@ func (u UserService) FindUserByName(ctx context.Context, username string, fields
 }
 
 func (u UserService) FindUserByEmail(ctx context.Context, email string, fields *store.UserFields) (*model.User, error) {
-	if len(email) > 0 {
-		usr, err := u.store.User().FindByEmail(ctx, email, fields)
-		if err != nil {
-			return nil, err
-		}
-		return usr, nil
+	if len(email) == 0 || !strings.Contains(email, "@") {
+		err := errors.ErrInvalidArgument.New("Email not be null!")
+		return nil, err
 	}
-	err := errors.ErrInvalidArgument.New("email not be null!")
-	return nil, err
+	usr, err := u.store.User().FindByEmail(ctx, email, fields)
+	if err != nil {
+		return nil, err
+	}
+	usr.Sanitize()
+	return usr, nil
 }
 
 func (u UserService) UpdateUserInfo(ctx context.Context, userID string, userinfo map[string]string) error {
 	panic("implement me")
 }
 
-func (u UserService) Registration(ctx context.Context, user *model.User, password string) error {
-	panic("implement me")
+func (u UserService) Registration(ctx context.Context, user *model.User) error {
+	err := u.userValidator.Validate(ctx, &u, user)
+
 }
 
 func (u UserService) ConfirmEmail(ctx context.Context, user *model.User, token string) error {

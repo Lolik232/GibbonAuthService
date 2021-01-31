@@ -11,11 +11,17 @@ type User struct {
 	UserName       string            `json:"username,omitempty"`
 	Email          string            `json:"email,omitempty"`
 	EmailConfirmed bool              `json:"-"`
+	Password       string            `json:"password,omitempty"`
 	PasswordHash   string            `json:"-"`
 	UserInfo       map[string]string `json:"user_info,omitempty"`
 	UserSessions   []UserSession     `json:"user_sessions,omitempty"`
 	CreatedAt      *time.Time        `json:"created_at,omitempty"`
 	Roles          []UserRole        `json:"roles,omitempty"`
+}
+
+func (u *User) Sanitize() {
+	u.Password = ""
+	u.PasswordHash = ""
 }
 
 //UserSession struct

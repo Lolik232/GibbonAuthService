@@ -4,6 +4,7 @@ import (
 	"auth-server/config"
 	"fmt"
 	"github.com/spf13/viper"
+	"regexp"
 )
 
 func main() {
