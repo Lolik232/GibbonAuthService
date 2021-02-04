@@ -20,16 +20,6 @@ const (
 )
 
 type (
-	//UserValidatorConfiguration struct {
-	//	UserNameAllowedSymbols  string
-	//	UserNameRequiredSymbols string
-	//	PassAllowedSymbols      string
-	//	PassRequiredSymbols     string
-	//	UniqueEmail             bool
-	//	UniqueUsername          bool
-	//	PassMinLength           int
-	//	PassRequiredDigits      bool
-	//}
 	userValidatorConfiguration struct {
 		UserNameAllowedSymbols *regexp.Regexp
 		UsernameMinLength      int
@@ -42,7 +32,7 @@ type (
 		PassRequiredDigits     bool
 	}
 	IUserValidator interface {
-		Validate(ctx context.Context, service *service.UserFinder, user *model.User) error
+		Validate(ctx context.Context, service service.UserFinder, user *model.User) error
 	}
 )
 
@@ -80,20 +70,20 @@ func (u UserValidator) New() (*UserValidator, error) {
 		params: params,
 	}, nil
 }
-func (u UserValidator) Validate(ctx context.Context, service *service.UserFinder, user *model.User) error {
+func (u UserValidator) Validate(ctx context.Context, service service.UserFinder, user *model.User) error {
 	if UniqueEmail {
-		u, err := (*service).FindUserByEmail(ctx, user.Email, nil)
+		u, err := (service).FindUserByEmail(ctx, user.Email, nil)
 		if u != nil {
-			return errors.Newf("Error in validation. Email already taken.")
+			return errors.ErrInvalidArgument.Newf("Error in validation. Email already taken.")
 		}
 		if err != nil {
 			return err
 		}
 	}
 	if UniqueUsername {
-		u, err := (*service).FindUserByName(ctx, user.UserName, nil)
+		u, err := (service).FindUserByName(ctx, user.UserName, nil)
 		if u != nil {
-			return errors.Newf("Error in validation. Username already taken.")
+			return errors.ErrInvalidArgument.Newf("Error in validation. Username already taken.")
 		}
 		if err != nil {
 			return err
@@ -103,13 +93,13 @@ func (u UserValidator) Validate(ctx context.Context, service *service.UserFinder
 		return errors.ErrInvalidArgument.Newf("Error in validation. Password too short, min length is %d.", u.params.PassMinLength)
 	}
 	if len(user.UserName) < u.params.UsernameMinLength {
-		return errors.Newf("Error in validation. Username too short, min length is %d", u.params.UsernameMinLength)
+		return errors.ErrInvalidArgument.Newf("Error in validation. Username too short, min length is %d", u.params.UsernameMinLength)
 	}
 	if len(user.UserName) > u.params.UsernameMinLength {
-		return errors.Newf("Error in validation. Username too long, max length is %d", u.params.UsernameMaxLength)
+		return errors.ErrInvalidArgument.Newf("Error in validation. Username too long, max length is %d", u.params.UsernameMaxLength)
 	}
 	if ok := u.params.UserNameAllowedSymbols.MatchString(user.UserName); !ok {
-		return errors.Newf("Error in validation. Username must contains only \"A-Z,a-z,0-9,_,-\".")
+		return errors.ErrInvalidArgument.Newf("Error in validation. Username must contains only \"A-Z,a-z,0-9,_,-\".")
 	}
 	return nil
 }

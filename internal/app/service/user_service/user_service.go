@@ -4,7 +4,6 @@ import (
 	errors "auth-server/internal/app/errors/types"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/store"
-	"auth-server/internal/app/utils/emailsender"
 	"auth-server/internal/app/utils/validators"
 	"context"
 	"github.com/spf13/viper"
@@ -15,14 +14,12 @@ import (
 
 type UserService struct {
 	store         store.Store
-	emailSender   emailsender.IEmailSender
 	userValidator validators.IUserValidator
 }
 
-func New(emailSender emailsender.IEmailSender, store store.Store, uvalidator validators.IUserValidator) (*UserService, error) {
+func New(store store.Store, uvalidator validators.IUserValidator) (*UserService, error) {
 	return &UserService{
 		store:         store,
-		emailSender:   emailSender,
 		userValidator: uvalidator,
 	}, nil
 }
@@ -81,11 +78,32 @@ func (u UserService) UpdateUserInfo(ctx context.Context, userID string, userinfo
 	panic("implement me")
 }
 
-func (u UserService) Registration(ctx context.Context, user *model.User) error {
-	err := u.userValidator.Validate(ctx, &u, user)
-
+func (u UserService) Registration(ctx context.Context, user *model.User) (string, error) {
+	err := u.userValidator.Validate(ctx, u, user)
+	if err != nil {
+		switch errors.GetType(err) {
+		case errors.ErrInvalidArgument:
+			return "", err
+		default:
+			log.Printf("Err in registration user. Err: %s", err.Error())
+			return "", errors.NoType.Newf("")
+		}
+	}
+	id, err := u.store.User().Create(ctx, user)
+	if err != nil {
+		return "", err
+	}
+	token, err := u.GenerateEmailConfToken(ctx, id)
+	if err != nil {
+		log.Printf("Err in registration user. Err: %s", err.Error())
+		err = u.store.User().Delete(ctx, id)
+		if err != nil {
+			log.Printf("Err in registration user. Err: %s", err.Error())
+		}
+		return "", errors.NoType.Newf("")
+	}
+	return token, nil
 }
-
 func (u UserService) ConfirmEmail(ctx context.Context, user *model.User, token string) error {
 	key := viper.GetString("keys.email_conf_key")
 	decodedID, tokenDeadTime, err := decodeEmailConfToken(token, key)
@@ -107,6 +125,7 @@ func (u UserService) ConfirmEmail(ctx context.Context, user *model.User, token s
 	err = u.store.User().Update(ctx, user.ID, &model.User{EmailConfirmed: true})
 	if err != nil {
 		log.Printf("Err in conf email %s", err.Error())
+		return errors.NoType.Newf("")
 	}
 	return nil
 }
@@ -115,11 +134,11 @@ func (u UserService) FindUserSessions(ctx context.Context, userID string) (*[]mo
 	panic("implement me")
 }
 
-func (u UserService) Authenticate(ctx context.Context, login, password, clientID string) (*model.Identity, error) {
+func (u UserService) Authenticate(ctx context.Context, login, password, clientID string) (*model.User, *model.ClientRefToken, error) {
 	panic("implement me")
 }
 
-func (u UserService) UpdateRefToken(ctx context.Context, userID, clientID, refToken string) (*model.Identity, error) {
+func (u UserService) UpdateRefToken(ctx context.Context, userID, clientID, refToken string) (*model.ClientRefToken, error) {
 	panic("implement me")
 }
 

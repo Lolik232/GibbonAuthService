@@ -19,6 +19,7 @@ type (
 		FindUserClientRoles(ctx context.Context, userID, clientID string) ([]model.UserRole, error)
 		Update(ctx context.Context, userID string, user *model.User) error
 		Create(ctx context.Context, user *model.User) (string, error)
+		Delete(ctx context.Context, userID string) error
 	}
 	UserPassChecker interface {
 		CheckPassByID(ctx context.Context, userID, passwordHash string) error

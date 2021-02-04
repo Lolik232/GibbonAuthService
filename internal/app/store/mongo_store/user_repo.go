@@ -128,7 +128,7 @@ func (u UserRepo) FindById(ctx context.Context, id string, params *store.UserFie
 	usr, err := u.fetch(ctx, query, params)
 	if err != nil {
 		if errors.GetType(err) == errors.ErrInvalidArgument {
-			return nil, errors.ErrInvalidArgument.Wrapf(err, "Invalid userID sv", uid)
+			return nil, errors.ErrInvalidArgument.Wrapf(err, "Invalid userID %s", uid)
 		}
 		return nil, err
 	}
@@ -182,6 +182,20 @@ func (u UserRepo) CheckSession(ctx context.Context, id string) error {
 
 func (u UserRepo) FindUserClientRoles(ctx context.Context, userID, clientID string) ([]model.UserRole, error) {
 	panic("implement me")
+}
+func (u UserRepo) Delete(ctx context.Context, userID string) error {
+	ID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return errors.ErrInvalidArgument.Newf("Invalid userID %s", userID)
+	}
+	query := bson.M{
+		"_id": ID,
+	}
+	_, err = u.usersCol.DeleteOne(ctx, query)
+	if err != nil {
+		return errors.NoType.Newf("")
+	}
+	return nil
 }
 
 func (u UserRepo) CheckPassByID(ctx context.Context, userID, passwordHash string) error {

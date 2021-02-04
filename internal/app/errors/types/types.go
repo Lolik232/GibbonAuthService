@@ -40,7 +40,7 @@ func (err customError) Error() string {
 }
 
 //New creates a no type error
-func New(msg int) error {
+func New(msg string) error {
 	return customError{
 		errorType:     NoType,
 		standartError: errors.New(msg),
