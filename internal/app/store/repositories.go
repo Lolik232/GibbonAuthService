@@ -5,6 +5,15 @@ import (
 	"context"
 )
 
+const (
+	ParamUserName     = "username"
+	ParamEmail        = "email"
+	ParamCreatedAt    = "created_at"
+	ParamUserInfo     = "user_info"
+	ParamUserSessions = "user_sessions"
+	ParamUserRoles    = "user_roles"
+)
+
 //UserRepository interface
 type (
 	UserRepository interface {
@@ -19,7 +28,8 @@ type (
 		FindUserClientRoles(ctx context.Context, userID, clientID string) ([]model.UserRole, error)
 		Update(ctx context.Context, userID string, user *model.User) error
 		Create(ctx context.Context, user *model.User) (string, error)
-		Delete(ctx context.Context, userID string) error
+		DeleteById(ctx context.Context, userID string) error
+		DeleteByName(ctx context.Context, userID string) error
 	}
 	UserPassChecker interface {
 		CheckPassByID(ctx context.Context, userID, passwordHash string) error

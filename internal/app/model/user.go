@@ -23,6 +23,13 @@ func (u *User) Sanitize() {
 	u.Password = ""
 	u.PasswordHash = ""
 }
+func (u *User) SanitizeForRegistration() {
+	u.EmailConfirmed = false
+	u.PasswordHash = ""
+	u.UserSessions = nil
+	u.Roles = nil
+	u.ID = ""
+}
 
 //UserSession struct
 type UserSession struct {

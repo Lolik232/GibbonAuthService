@@ -79,6 +79,7 @@ func (u UserService) UpdateUserInfo(ctx context.Context, userID string, userinfo
 }
 
 func (u UserService) Registration(ctx context.Context, user *model.User) (string, error) {
+	user.SanitizeForRegistration()
 	err := u.userValidator.Validate(ctx, u, user)
 	if err != nil {
 		switch errors.GetType(err) {
@@ -89,6 +90,7 @@ func (u UserService) Registration(ctx context.Context, user *model.User) (string
 			return "", errors.NoType.Newf("")
 		}
 	}
+
 	id, err := u.store.User().Create(ctx, user)
 	if err != nil {
 		return "", err
@@ -96,7 +98,7 @@ func (u UserService) Registration(ctx context.Context, user *model.User) (string
 	token, err := u.GenerateEmailConfToken(ctx, id)
 	if err != nil {
 		log.Printf("Err in registration user. Err: %s", err.Error())
-		err = u.store.User().Delete(ctx, id)
+		err = u.store.User().DeleteById(ctx, id)
 		if err != nil {
 			log.Printf("Err in registration user. Err: %s", err.Error())
 		}
@@ -153,4 +155,13 @@ func (u UserService) GenerateEmailConfToken(ctx context.Context, userID string) 
 		log.Printf("Error in generation token %s", err.Error())
 	}
 	return token, nil
+}
+
+func (u UserService) DeleteById(ctx context.Context, userID string) error {
+	err := u.store.User().DeleteById(ctx, userID)
+	return err
+}
+func (u UserService) DeleteByName(ctx context.Context, username string) error {
+	err := u.store.User().DeleteByName(ctx, username)
+	return err
 }

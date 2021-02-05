@@ -6,9 +6,9 @@ import (
 )
 
 type HTTPError struct {
-	Code    uint              `json:"code"`
-	Message string            `json:"err_msg"`
-	Params  map[string]string `json:"params"`
+	Code    uint              `json:"code,omitempty"`
+	Message string            `json:"err_msg,omitempty"`
+	Params  map[string]string `json:"params,omitempty"`
 }
 
 var (
@@ -22,26 +22,33 @@ var (
 	}
 )
 
-func New(err error) *HTTPError {
+func New(err error) (*HTTPError, int) {
 	if err == nil {
 		return &HTTPError{
 			Code:    codes[types.NoType],
 			Message: "Internal server error.",
 			Params:  nil,
-		}
+		}, http.StatusInternalServerError
 	}
 	errtype := types.GetType(err)
 	msg := ""
+	httpCode := 400
+
 	switch errtype {
 	//Users should not be aware of internal problems
 	case types.NoType, types.ErrDatabaseDown:
 		msg = "Internal server error,"
+		httpCode = http.StatusConflict
+	case types.ErrDuplicateEntry:
+		msg = err.Error()
+		httpCode = http.StatusConflict
 	default:
 		msg = err.Error()
 	}
+
 	return &HTTPError{
 		Code:    codes[errtype],
 		Message: msg,
 		Params:  nil,
-	}
+	}, httpCode
 }

@@ -183,7 +183,7 @@ func (u UserRepo) CheckSession(ctx context.Context, id string) error {
 func (u UserRepo) FindUserClientRoles(ctx context.Context, userID, clientID string) ([]model.UserRole, error) {
 	panic("implement me")
 }
-func (u UserRepo) Delete(ctx context.Context, userID string) error {
+func (u UserRepo) DeleteById(ctx context.Context, userID string) error {
 	ID, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.ErrInvalidArgument.Newf("Invalid userID %s", userID)
@@ -191,7 +191,23 @@ func (u UserRepo) Delete(ctx context.Context, userID string) error {
 	query := bson.M{
 		"_id": ID,
 	}
-	_, err = u.usersCol.DeleteOne(ctx, query)
+	result, err := u.usersCol.DeleteOne(ctx, query)
+	if result != nil && result.DeletedCount == 0 {
+		return errors.ErrInvalidArgument.New("Invalid userID.")
+	}
+	if err != nil {
+		return errors.NoType.Newf("")
+	}
+	return nil
+}
+func (u UserRepo) DeleteByName(ctx context.Context, username string) error {
+	query := bson.M{
+		"username": username,
+	}
+	result, err := u.usersCol.DeleteOne(ctx, query)
+	if result != nil && result.DeletedCount == 0 {
+		return errors.ErrInvalidArgument.New("Invalid username.")
+	}
 	if err != nil {
 		return errors.NoType.Newf("")
 	}
