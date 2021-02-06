@@ -163,5 +163,10 @@ func (u UserHandler) register() http.HandlerFunc {
 }
 
 func (u UserHandler) confirmEmail() http.HandlerFunc {
-	panic("implement me")
+	return func(w http.ResponseWriter, r *http.Request) {
+		token := mux.Vars(r)["token"]
+		userID := r.FormValue("id")
+		err := (*u.serviceManager.User).ConfirmEmail(r.Context(), userID, token)
+		u.error(w, r, err)
+	}
 }

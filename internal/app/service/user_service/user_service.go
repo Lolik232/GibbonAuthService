@@ -79,7 +79,13 @@ func (u UserService) UpdateUserInfo(ctx context.Context, userID string, userinfo
 }
 
 func (u UserService) Registration(ctx context.Context, user *model.User) (string, error) {
+	userInfo := map[string]string{
+		"first_name": user.UserInfo[store.UserInfoFirstName],
+		"last_name":  user.UserInfo[store.UserInfoLastName],
+		"mid_name":   user.UserInfo[store.UserInfoMidName],
+	}
 	user.SanitizeForRegistration()
+	user.UserInfo = userInfo
 	err := u.userValidator.Validate(ctx, u, user)
 	if err != nil {
 		switch errors.GetType(err) {
@@ -106,7 +112,7 @@ func (u UserService) Registration(ctx context.Context, user *model.User) (string
 	}
 	return token, nil
 }
-func (u UserService) ConfirmEmail(ctx context.Context, user *model.User, token string) error {
+func (u UserService) ConfirmEmail(ctx context.Context, userID, token string) error {
 	key := viper.GetString("keys.email_conf_key")
 	decodedID, tokenDeadTime, err := decodeEmailConfToken(token, key)
 	if err != nil {
@@ -121,10 +127,10 @@ func (u UserService) ConfirmEmail(ctx context.Context, user *model.User, token s
 	if tokenDeadTime > time.Now().Unix() {
 		return errors.ErrInvalidArgument.New("Token is dead.")
 	}
-	if decodedID != user.ID {
+	if decodedID != userID {
 		return errors.ErrInvalidArgument.New("Invalid token.")
 	}
-	err = u.store.User().Update(ctx, user.ID, &model.User{EmailConfirmed: true})
+	err = u.store.User().Update(ctx, userID, &model.User{EmailConfirmed: true})
 	if err != nil {
 		log.Printf("Err in conf email %s", err.Error())
 		return errors.NoType.Newf("")

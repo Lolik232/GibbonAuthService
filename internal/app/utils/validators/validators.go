@@ -4,6 +4,7 @@ import (
 	errors "auth-server/internal/app/errors/types"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/service"
+	"auth-server/internal/app/store"
 	"context"
 	"fmt"
 	"regexp"
@@ -100,6 +101,16 @@ func (u UserValidator) Validate(ctx context.Context, service service.UserFinder,
 	}
 	if ok := u.params.UserNameAllowedSymbols.MatchString(user.UserName); !ok {
 		return errors.ErrInvalidArgument.Newf("Error in validation. Username must contains only \"A-Z,a-z,0-9,_,-\".")
+	}
+	pattern := "^[A-Za-z]{1,22}$"
+	if ok, _ := regexp.MatchString(pattern, user.UserInfo[store.UserInfoFirstName]); !ok {
+		return errors.ErrInvalidArgument.Newf("Error in validation. First name may contains only A-Z,a-z.")
+	}
+	if ok, _ := regexp.MatchString(pattern, user.UserInfo[store.UserInfoLastName]); !ok {
+		return errors.ErrInvalidArgument.Newf("Error in validation. Last name may contains only A-Z,a-z.")
+	}
+	if ok, _ := regexp.MatchString(pattern, user.UserInfo[store.UserInfoMidName]); !ok {
+		return errors.ErrInvalidArgument.Newf("Error in validation. Mid name may contains only A-Z,a-z.")
 	}
 	return nil
 }

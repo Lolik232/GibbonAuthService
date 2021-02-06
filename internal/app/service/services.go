@@ -26,7 +26,7 @@ type (
 		UserFinder
 		UpdateUserInfo(ctx context.Context, userID string, userinfo map[string]string) error
 		Registration(ctx context.Context, user *model.User) (string, error)
-		ConfirmEmail(ctx context.Context, user *model.User, token string) error
+		ConfirmEmail(ctx context.Context, userID, token string) error
 		DeleteById(ctx context.Context, userID string) error
 		DeleteByName(ctx context.Context, username string) error
 	}

@@ -14,6 +14,12 @@ const (
 	ParamUserRoles    = "user_roles"
 )
 
+const (
+	UserInfoFirstName = "first_name"
+	UserInfoLastName  = "last_name"
+	UserInfoMidName   = "mid_name"
+)
+
 //UserRepository interface
 type (
 	UserRepository interface {
