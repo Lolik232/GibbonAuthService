@@ -62,7 +62,7 @@ func parseUserParams(params []string) *store.UserFields {
 	return fields
 }
 
-func (u UserHandler) configureUserRoutes(router *mux.Router) {
+func (u UserHandler) ConfigureRoutes(router *mux.Router) {
 
 	users := router.PathPrefix("/users").Subrouter()
 	//get user

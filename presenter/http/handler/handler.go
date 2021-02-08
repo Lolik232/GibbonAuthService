@@ -3,8 +3,13 @@ package handler
 import (
 	he "auth-server/internal/app/errors/error"
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"net/http"
 )
+
+type IHandler interface {
+	ConfigureRotes(router *mux.Router)
+}
 
 type Handler struct {
 }
