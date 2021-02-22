@@ -1,12 +1,12 @@
 package handler
 
 import (
-	errors "auth-server/internal/app/errors/types"
+	"auth-server/config/filePath"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/service"
 	"auth-server/internal/app/store"
-	"auth-server/internal/app/utils/emailsender"
-	"auth-server/internal/app/utils/files"
+	"auth-server/pkg/emailsender"
+	errors "auth-server/pkg/errors/types"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -15,15 +15,17 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 )
 
 type UserHandler struct {
 	Handler
 	serviceManager *service.Manager
-	emailSender    *emailsender.IEmailSender
+	emailSender    emailsender.IEmailSender
 }
 
-func NewUserHandler(manager *service.Manager, sender *emailsender.IEmailSender) *UserHandler {
+func NewUserHandler(manager *service.Manager, sender emailsender.IEmailSender) *UserHandler {
 	return &UserHandler{
 		Handler:        Handler{},
 		serviceManager: manager,
@@ -31,7 +33,8 @@ func NewUserHandler(manager *service.Manager, sender *emailsender.IEmailSender) 
 	}
 }
 
-func parseUserParams(params []string) *store.UserFields {
+func parseUserParams(params string) *store.UserFields {
+
 	fields := &store.UserFields{
 		UserName:     false,
 		Email:        false,
@@ -40,10 +43,10 @@ func parseUserParams(params []string) *store.UserFields {
 		UserSessions: false,
 		UserRoles:    false,
 	}
-	if params == nil {
+	if len(params) == 0 {
 		return fields
 	}
-	for _, param := range params {
+	for _, param := range strings.Split(params, ",") {
 		switch param {
 		case store.ParamUserName:
 			fields.UserName = true
@@ -62,6 +65,7 @@ func parseUserParams(params []string) *store.UserFields {
 	return fields
 }
 
+//ConfigureRoutes ...
 func (u UserHandler) ConfigureRoutes(router *mux.Router) {
 
 	users := router.PathPrefix("/users").Subrouter()
@@ -76,12 +80,18 @@ func (u UserHandler) ConfigureRoutes(router *mux.Router) {
 func (u UserHandler) getUserByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Accepted client. Method: getUserByID, handler: user.")
+		t := time.Now()
 		vars := mux.Vars(r)
 		userId := vars["id"]
-		params := parseUserParams(r.Form["params"])
-		user, err := (*u.serviceManager.User).FindUserByID(r.Context(), userId, params)
+		params := parseUserParams(r.FormValue("params"))
+		user, err := u.serviceManager.User.FindUserByID(r.Context(), userId, params)
+		defer func() {
+			since := time.Now().Sub(t).Milliseconds()
+			log.Printf("Time for req: %d", since)
+		}()
 		if err != nil {
 			u.error(w, r, err)
+			return
 		}
 		u.respondJson(w, r, http.StatusOK, user)
 	}
@@ -91,10 +101,11 @@ func (u UserHandler) getUserByName() http.HandlerFunc {
 		log.Println("Accepted client. Method: getUserByName, handler: user.")
 		vars := mux.Vars(r)
 		username := vars["username"]
-		params := parseUserParams(r.Form["params"])
-		user, err := (*u.serviceManager.User).FindUserByID(r.Context(), username, params)
+		params := parseUserParams(r.FormValue("params"))
+		user, err := u.serviceManager.User.FindUserByID(r.Context(), username, params)
 		if err != nil {
 			u.error(w, r, err)
+			return
 		}
 		u.respondJson(w, r, http.StatusOK, user)
 	}
@@ -119,21 +130,24 @@ func (u UserHandler) register() http.HandlerFunc {
 		if err != nil {
 			err = errors.ErrInvalidArgument.New("Invalid user data.")
 			u.error(w, r, err)
+			return
 		}
-		token, err := (*u.serviceManager.User).Registration(r.Context(), user)
+		token, err := u.serviceManager.User.Registration(r.Context(), user)
 		if err != nil {
 			u.error(w, r, err)
+			return
 		}
 		domain := viper.GetString("domain")
-		tmpl, err := template.ParseFiles(filesPath.EmailConfTemplate)
+		tmpl, err := template.ParseFiles(filePath.EmailConfTemplate)
 
 		if err != nil {
 			log.Println("Faili proebal, debil!")
-			err = (*u.serviceManager.User).DeleteByName(r.Context(), user.UserName)
+			err = u.serviceManager.User.DeleteByName(r.Context(), user.UserName)
 			if err != nil {
 				log.Println("Polnii pizdec! Err in delete user.")
 			}
 			u.error(w, r, err)
+			return
 		}
 
 		data := struct {
@@ -148,16 +162,18 @@ func (u UserHandler) register() http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 			u.error(w, r, err)
+			return
 		}
 		msg := buf.String()
-		err = (*u.emailSender).Send(r.Context(), "Confirmation email", user.Email, "text/html", msg)
+		err = u.emailSender.Send(r.Context(), "Confirmation email", user.Email, "text/html", msg)
 		if err != nil {
 			log.Println(err)
-			err = (*u.serviceManager.User).DeleteByName(r.Context(), user.UserName)
+			err = u.serviceManager.User.DeleteByName(r.Context(), user.UserName)
 			if err != nil {
 				log.Println("Polnii pizdec! Err in delete user.")
 			}
 			u.error(w, r, err)
+			return
 		}
 	}
 }
@@ -166,7 +182,10 @@ func (u UserHandler) confirmEmail() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token := mux.Vars(r)["token"]
 		userID := r.FormValue("id")
-		err := (*u.serviceManager.User).ConfirmEmail(r.Context(), userID, token)
-		u.error(w, r, err)
+		err := u.serviceManager.User.ConfirmEmail(r.Context(), userID, token)
+		if err != nil {
+			u.error(w, r, err)
+			return
+		}
 	}
 }

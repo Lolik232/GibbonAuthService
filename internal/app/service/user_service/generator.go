@@ -1,7 +1,7 @@
 package user_service
 
 import (
-	errors "auth-server/internal/app/errors/types"
+	errors "auth-server/pkg/errors/types"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"

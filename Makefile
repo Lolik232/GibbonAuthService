@@ -1,9 +1,12 @@
 .PHONY: build
-build:
-	go build -v ./cmd/restapi
+build-debug:
+	go build -o ./.bin/api ./cmd/restapi/main.go
+	mkdir -p ./.bin/api/files
 
-.PHONY: test
-test:
-	go test -v -race -timeout 30s ./...
 
-.DEFAULT_GOAL := build
+run: build-debug
+	./.bin/api
+
+production:
+
+.DEFAULT_GOAL := build-debug

@@ -1,10 +1,10 @@
 package user_service
 
 import (
-	errors "auth-server/internal/app/errors/types"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/store"
 	"auth-server/internal/app/utils/validators"
+	errors "auth-server/pkg/errors/types"
 	"context"
 	"github.com/spf13/viper"
 	"log"
@@ -18,13 +18,14 @@ type UserService struct {
 }
 
 func New(store store.Store, uvalidator validators.IUserValidator) (*UserService, error) {
-	return &UserService{
+	us := UserService{
 		store:         store,
 		userValidator: uvalidator,
-	}, nil
+	}
+	return &us, nil
 }
 
-func (u UserService) FindUserByID(ctx context.Context, userID string, fields *store.UserFields) (*model.User, error) {
+func (u *UserService) FindUserByID(ctx context.Context, userID string, fields *store.UserFields) (*model.User, error) {
 	usr, err := u.store.User().FindById(ctx, userID, fields)
 	if err != nil {
 		return nil, err
@@ -33,7 +34,7 @@ func (u UserService) FindUserByID(ctx context.Context, userID string, fields *st
 	return usr, nil
 }
 
-func (u UserService) FindUserByLogin(ctx context.Context, login string, fields *store.UserFields) (*model.User, error) {
+func (u *UserService) FindUserByLogin(ctx context.Context, login string, fields *store.UserFields) (*model.User, error) {
 	var usr *model.User
 	var err error
 
@@ -48,7 +49,7 @@ func (u UserService) FindUserByLogin(ctx context.Context, login string, fields *
 	return usr, err
 }
 
-func (u UserService) FindUserByName(ctx context.Context, username string, fields *store.UserFields) (*model.User, error) {
+func (u *UserService) FindUserByName(ctx context.Context, username string, fields *store.UserFields) (*model.User, error) {
 	if len(username) > 0 {
 		usr, err := u.store.User().FindByName(ctx, username, fields)
 		if err != nil {
@@ -61,7 +62,7 @@ func (u UserService) FindUserByName(ctx context.Context, username string, fields
 	return nil, err
 }
 
-func (u UserService) FindUserByEmail(ctx context.Context, email string, fields *store.UserFields) (*model.User, error) {
+func (u *UserService) FindUserByEmail(ctx context.Context, email string, fields *store.UserFields) (*model.User, error) {
 	if len(email) == 0 || !strings.Contains(email, "@") {
 		err := errors.ErrInvalidArgument.New("Email not be null!")
 		return nil, err
@@ -78,12 +79,17 @@ func (u UserService) UpdateUserInfo(ctx context.Context, userID string, userinfo
 	panic("implement me")
 }
 
-func (u UserService) Registration(ctx context.Context, user *model.User) (string, error) {
+func mapUserInfo(info map[string]string) map[string]string {
 	userInfo := map[string]string{
-		"first_name": user.UserInfo[store.UserInfoFirstName],
-		"last_name":  user.UserInfo[store.UserInfoLastName],
-		"mid_name":   user.UserInfo[store.UserInfoMidName],
+		"first_name": info[store.UserInfoFirstName],
+		"last_name":  info[store.UserInfoLastName],
+		"mid_name":   info[store.UserInfoMidName],
 	}
+	return userInfo
+}
+
+func (u *UserService) Registration(ctx context.Context, user *model.User) (string, error) {
+	userInfo := mapUserInfo(user.UserInfo)
 	user.SanitizeForRegistration()
 	user.UserInfo = userInfo
 	err := u.userValidator.Validate(ctx, u, user)
@@ -112,7 +118,7 @@ func (u UserService) Registration(ctx context.Context, user *model.User) (string
 	}
 	return token, nil
 }
-func (u UserService) ConfirmEmail(ctx context.Context, userID, token string) error {
+func (u *UserService) ConfirmEmail(ctx context.Context, userID, token string) error {
 	key := viper.GetString("keys.email_conf_key")
 	decodedID, tokenDeadTime, err := decodeEmailConfToken(token, key)
 	if err != nil {
@@ -138,7 +144,7 @@ func (u UserService) ConfirmEmail(ctx context.Context, userID, token string) err
 	return nil
 }
 
-func (u UserService) FindUserSessions(ctx context.Context, userID string) (*[]model.UserSession, error) {
+func (u *UserService) FindUserSessions(ctx context.Context, userID string) (*[]model.UserSession, error) {
 	panic("implement me")
 }
 
@@ -146,15 +152,15 @@ func (u UserService) Authenticate(ctx context.Context, login, password, clientID
 	panic("implement me")
 }
 
-func (u UserService) UpdateRefToken(ctx context.Context, userID, clientID, refToken string) (*model.ClientRefToken, error) {
+func (u *UserService) UpdateRefToken(ctx context.Context, userID, clientID, refToken string) (*model.ClientRefToken, error) {
 	panic("implement me")
 }
 
-func (u UserService) SignOut(ctx context.Context, userID, sessionID string) error {
+func (u *UserService) SignOut(ctx context.Context, userID, sessionID string) error {
 	panic("implement me")
 }
 
-func (u UserService) GenerateEmailConfToken(ctx context.Context, userID string) (string, error) {
+func (u *UserService) GenerateEmailConfToken(ctx context.Context, userID string) (string, error) {
 	key := viper.GetString("keys.email_conf_key")
 	token, err := generateEmailConfToken(userID, key)
 	if err != nil {
@@ -163,11 +169,11 @@ func (u UserService) GenerateEmailConfToken(ctx context.Context, userID string) 
 	return token, nil
 }
 
-func (u UserService) DeleteById(ctx context.Context, userID string) error {
+func (u *UserService) DeleteById(ctx context.Context, userID string) error {
 	err := u.store.User().DeleteById(ctx, userID)
 	return err
 }
-func (u UserService) DeleteByName(ctx context.Context, username string) error {
+func (u *UserService) DeleteByName(ctx context.Context, username string) error {
 	err := u.store.User().DeleteByName(ctx, username)
 	return err
 }

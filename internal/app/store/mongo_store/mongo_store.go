@@ -1,8 +1,13 @@
 package mongo_store
 
 import (
-	"auth-server/internal/app/store"
+	st "auth-server/internal/app/store"
 	"go.mongodb.org/mongo-driver/mongo"
+)
+
+const (
+	UsersCollection   = "users"
+	ClientsCollection = "client"
 )
 
 //Store is a mongoDB database storage
@@ -12,24 +17,31 @@ type Store struct {
 	clientRepository *ClientRepo
 }
 
+func NewStore(db *mongo.Database) *Store {
+	return &Store{db: db}
+}
+
 //User returns the "Users" repository
-func (s *Store) User() store.UserRepository {
+func (s *Store) User() st.UserRepository {
 	if s.userRepository != nil {
 		return s.userRepository
 	}
 	s.userRepository = &UserRepo{
-		usersCol: s.db.Collection("col"),
+		store:    s,
+		usersCol: s.db.Collection(UsersCollection),
 	}
 	return s.userRepository
 }
 
 //Client returns the "Clients" repository
-func (s *Store) Client() store.ClientRepository {
+func (s *Store) Client() st.ClientRepository {
 	if s.clientRepository != nil {
 		return s.clientRepository
 	}
 	s.clientRepository = &ClientRepo{
-		clientsCol: s.db.Collection("col"),
+		store:      s,
+		clientsCol: s.db.Collection(ClientsCollection),
 	}
+
 	return s.clientRepository
 }

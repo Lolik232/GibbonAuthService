@@ -1,5 +1,7 @@
 package model
 
+import "auth-server/pkg/errors/error"
+
 //OkResponce is model of OK responce
 type OkResponce struct {
 	Response map[string]interface{} `json:"response"`
@@ -24,10 +26,10 @@ func CreateOkResponce(count int, items []interface{}) *OkResponce {
 
 //BadRequest is model of BAD responce
 type BadResponce struct {
-	Error error `json:"error"`
+	Error *error.HTTPError `json:"error"`
 }
 
 //CreateBadResponce a constructor of "BadResponce" struct
-func CreateBadResponce(err error) *BadResponce {
+func CreateBadResponce(err *error.HTTPError) *BadResponce {
 	return &BadResponce{err}
 }

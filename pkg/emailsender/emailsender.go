@@ -1,7 +1,7 @@
 package emailsender
 
 import (
-	errors "auth-server/internal/app/errors/types"
+	errors "auth-server/pkg/errors/types"
 	"context"
 	"fmt"
 	"net/smtp"
@@ -17,7 +17,7 @@ type EmailSender struct {
 	host, port, companyName, companyEmail string
 }
 
-func New(email, password, host, port, companyName, companyEmail string) *EmailSender {
+func New(email, password, host, port, companyName, companyEmail string) IEmailSender {
 	auth := smtp.PlainAuth("", email, password, host)
 	return &EmailSender{
 		auth,
@@ -27,8 +27,11 @@ func New(email, password, host, port, companyName, companyEmail string) *EmailSe
 		companyEmail,
 	}
 }
-
 func (e EmailSender) Send(ctx context.Context, subject, email, msgtype, msg string) error {
+
+	if len(subject) == 0 || len(email) == 0 || len(msgtype) == 0 || len(msg) == 0 {
+		return errors.ErrInvalidArgument.New("Err. Params not be null.")
+	}
 	headers := make(map[string]string)
 	headers["From"] = e.companyEmail
 	headers["To"] = email

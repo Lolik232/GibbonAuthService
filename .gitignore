@@ -6,3 +6,4 @@
 config.yml
 config.yaml
 *.exe
+.bin

@@ -1,11 +1,10 @@
 package server
 
 import (
-	errors "auth-server/internal/app/errors/types"
+	"auth-server/internal/app/presenter/http/handler"
 	"auth-server/internal/app/service"
 	"auth-server/internal/app/store"
-	"auth-server/presenter/http/handler"
-	"context"
+	errors "auth-server/pkg/errors/types"
 	"github.com/gorilla/mux"
 	"net/http"
 	"time"
@@ -15,10 +14,10 @@ type server struct {
 	server         *http.Server
 	router         *mux.Router
 	serviceManager *service.Manager
-	store          *store.Store
+	store          store.Store
 }
 
-func NewServer(ctx context.Context, sm *service.Manager, store *store.Store, handlers ...handler.IHandler) (*server, error) {
+func NewServer(sm *service.Manager, store store.Store, handlers ...handler.IHandler) (*server, error) {
 	if sm == nil {
 		return nil, errors.ErrInvalidArgument.New("No service manager provided.")
 	}
@@ -27,10 +26,10 @@ func NewServer(ctx context.Context, sm *service.Manager, store *store.Store, han
 	}
 	router := &mux.Router{}
 	for _, h := range handlers {
-		h.ConfigureRotes(router)
+		h.ConfigureRoutes(router)
 	}
 	srv := &http.Server{
-		Addr:         ":8080",
+		Addr:         "0.0.0.0:8080",
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,

@@ -1,9 +1,9 @@
 package mongo_store
 
 import (
-	errors "auth-server/internal/app/errors/types"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/store"
+	errors "auth-server/pkg/errors/types"
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -25,9 +25,15 @@ type (
 	}
 	//User represents the "Users" collection
 	User struct {
-		UserCommonFields
-		UserSessions []UserSession `bson:"user_sessions,omitempty"`
-		ClientRoles  []ClientRole  `bson:"user_roles,omitempty"`
+		ID             primitive.ObjectID  `bson:"_id,omitempty"`
+		UserName       string              `bson:"username,omitempty"`
+		PasswordHash   string              `bson:"password_hash,omitempty"`
+		Email          string              `bson:"email,omitempty"`
+		EmailConfirmed bool                `bson:"email_confirmed,omitempty"`
+		CreatedAt      *primitive.DateTime `bson:"created_at,omitempty"`
+		UserInfo       map[string]string   `bson:"user_info,omitempty"`
+		UserSessions   []UserSession       `bson:"user_sessions,omitempty"`
+		ClientRoles    []ClientRole        `bson:"user_roles,omitempty"`
 	}
 	//ClientRole represent user roles attached document in "User"
 	ClientRole struct {
@@ -45,9 +51,15 @@ type (
 
 	//UserClient represents an aggregation result-set for two collections
 	UserClient struct {
-		UserCommonFields
-		UserSessions []UserSessionClient `bson:"user_sessions,omitempty"`
-		Roles        []UserClientRole    `bson:"roles,omitempty"`
+		ID             primitive.ObjectID  `bson:"_id,omitempty"`
+		UserName       string              `bson:"username,omitempty"`
+		PasswordHash   string              `bson:"password_hash,omitempty"`
+		Email          string              `bson:"email,omitempty"`
+		EmailConfirmed bool                `bson:"email_confirmed,omitempty"`
+		CreatedAt      *primitive.DateTime `bson:"created_at,omitempty"`
+		UserInfo       map[string]string   `bson:"user_info,omitempty"`
+		UserSessions   []UserSessionClient `bson:"user_sessions,omitempty"`
+		Roles          []UserClientRole    `bson:"roles,omitempty"`
 	}
 
 	//UserSessionClient represent attached "Sessions" document in "UserClient"
@@ -64,7 +76,7 @@ type (
 	}
 	//
 	UserRepo struct {
-		store    *store.Store
+		store    *Store
 		usersCol *mongo.Collection
 	}
 )
@@ -75,10 +87,23 @@ func (u UserRepo) fetch(ctx context.Context, query bson.M, params *store.UserFie
 	}
 
 	projection := bson.M{}
-	projection["username"] = params.UserName
-	projection["email"] = params.Email
-	projection["created_at"] = params.CreatedAt
-	projection["user_info"] = params.UserInfo
+	projection["_id"] = true
+	if params.UserName {
+		projection["username"] = params.UserName
+	}
+	if params.Email {
+		projection["email"] = params.Email
+	}
+	if params.CreatedAt {
+		projection["created_at"] = params.CreatedAt
+	}
+	if params.UserInfo {
+		projection["user_info"] = params.UserInfo
+	}
+
+	if params.UserRoles {
+		projection["user_info"] = params.UserRoles
+	}
 	var usr *UserClient
 	if params.UserSessions == false {
 		opt := options.FindOne().SetProjection(projection)
@@ -128,7 +153,7 @@ func (u UserRepo) FindById(ctx context.Context, id string, params *store.UserFie
 	usr, err := u.fetch(ctx, query, params)
 	if err != nil {
 		if errors.GetType(err) == errors.ErrInvalidArgument {
-			return nil, errors.ErrInvalidArgument.Wrapf(err, "Invalid userID %s", uid)
+			return nil, errors.ErrInvalidArgument.Newf("Invalid userID %s", id)
 		}
 		return nil, err
 	}
@@ -335,13 +360,11 @@ func ToUserClient(usr *UserClient) *model.User {
 
 func ToDb(usr *model.User) *User {
 	user := &User{
-		UserCommonFields: UserCommonFields{
-			UserName:       usr.UserName,
-			PasswordHash:   usr.PasswordHash,
-			Email:          usr.Email,
-			EmailConfirmed: false,
-			UserInfo:       usr.UserInfo,
-		},
+		UserName:       usr.UserName,
+		PasswordHash:   usr.PasswordHash,
+		Email:          usr.Email,
+		EmailConfirmed: false,
+		UserInfo:       usr.UserInfo,
 	}
 	return user
 }

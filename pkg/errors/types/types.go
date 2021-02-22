@@ -17,11 +17,11 @@ const (
 type ErrorType uint
 
 var messages = map[ErrorType]string{
-	ErrInvalidArgument:           "Invalid argument.",
-	ErrInvalidPassword:           "Invalid password.",
-	ErrInvalidPasswordOrUsername: "Invalid password or username. Check and try again.",
-	ErrDatabaseDown:              "Database down.",
-	ErrDuplicateEntry:            "Duplicate entry.",
+	ErrInvalidArgument:           "Invalid argument. ",
+	ErrInvalidPassword:           "Invalid password. ",
+	ErrInvalidPasswordOrUsername: "Invalid password or username. Check and try again. ",
+	ErrDatabaseDown:              "Database down. ",
+	ErrDuplicateEntry:            "Duplicate entry. ",
 }
 
 type customError struct {

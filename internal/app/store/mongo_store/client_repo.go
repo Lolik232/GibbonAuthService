@@ -23,6 +23,7 @@ type RefToken struct {
 }
 
 type ClientRepo struct {
+	store      *Store
 	clientsCol *mongo.Collection
 }
 

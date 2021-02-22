@@ -1,14 +1,15 @@
 package handler
 
 import (
-	he "auth-server/internal/app/errors/error"
+	"auth-server/internal/app/model"
+	he "auth-server/pkg/errors/error"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
 type IHandler interface {
-	ConfigureRotes(router *mux.Router)
+	ConfigureRoutes(router *mux.Router)
 }
 
 type Handler struct {
@@ -20,11 +21,14 @@ func (h Handler) respondJson(w http.ResponseWriter, r *http.Request, code int, d
 	if data != nil {
 		json.NewEncoder(w).Encode(data)
 	}
+	return
 }
 
 func (h Handler) error(w http.ResponseWriter, r *http.Request, err error) {
 	httpErr, code := he.New(err)
-	h.respondJson(w, r, code, httpErr)
+	resp := model.CreateBadResponce(httpErr)
+	h.respondJson(w, r, code, resp)
+	return
 }
 
 func (h Handler) respondHtml(w http.ResponseWriter, r *http.Request, data interface{}) {

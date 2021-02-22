@@ -7,12 +7,14 @@ import (
 )
 
 type (
+	//Compare all methods for work with user
 	UserService interface {
 		UserCrud
 		UserSessionsFinder
 		UserAuthenticator
-		GenerateEmailConfToken(ctx context.Context, userID, email string) (string, error)
+		GenerateEmailConfToken(ctx context.Context, userID string) (string, error)
 	}
+	//Only methods for find user
 	UserFinder interface {
 		FindUserByID(ctx context.Context, userID string, fields *store.UserFields) (*model.User, error)
 		FindUserByLogin(ctx context.Context, login string, fields *store.UserFields) (*model.User, error)
@@ -22,6 +24,7 @@ type (
 	UserSessionsFinder interface {
 		FindUserSessions(ctx context.Context, userID string) (*[]model.UserSession, error)
 	}
+	//Only methods for Create-Update-Delete
 	UserCrud interface {
 		UserFinder
 		UpdateUserInfo(ctx context.Context, userID string, userinfo map[string]string) error
@@ -30,6 +33,7 @@ type (
 		DeleteById(ctx context.Context, userID string) error
 		DeleteByName(ctx context.Context, username string) error
 	}
+	//Authenticate user :)
 	UserAuthenticator interface {
 		Authenticate(ctx context.Context, login, password, clientID string) (*model.User, *model.ClientRefToken, error)
 		UpdateRefToken(ctx context.Context, userID, clientID, refToken string) (*model.ClientRefToken, error)

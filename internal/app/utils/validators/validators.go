@@ -1,10 +1,10 @@
 package validators
 
 import (
-	errors "auth-server/internal/app/errors/types"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/service"
 	"auth-server/internal/app/store"
+	errors "auth-server/pkg/errors/types"
 	"context"
 	"fmt"
 	"regexp"
@@ -44,7 +44,7 @@ type (
 )
 
 //New is constructor for UserValidator
-func (u UserValidator) New() (*UserValidator, error) {
+func NewUserValidator() (*UserValidator, error) {
 	usernameAllowedSymbols, err := regexp.Compile(fmt.Sprintf(UsernameAllowedSymbols, UsernameMinLength, UsernameMaxLength))
 	if err != nil {
 		return nil, err

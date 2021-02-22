@@ -1,7 +1,7 @@
 package error
 
 import (
-	"auth-server/internal/app/errors/types"
+	"auth-server/pkg/errors/types"
 	"net/http"
 )
 
