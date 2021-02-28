@@ -1,5 +1,22 @@
 package main
 
+import (
+	cfg "auth-server/internal/app/config"
+	"auth-server/internal/app/presenter/http/handler"
+	"auth-server/internal/app/presenter/http/server"
+	"auth-server/internal/app/service/services"
+	ms "auth-server/internal/app/store/mongo_store"
+	"auth-server/internal/app/utils/validators"
+	"auth-server/pkg/emailsender"
+	"context"
+	"github.com/subosito/gotenv"
+	"log"
+	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
 //bytes := make([]byte, 32)
 //msg := ""
 //rand.Read(bytes)
@@ -8,30 +25,17 @@ package main
 ////	msg += string(v)
 ////}
 //msg = hex.EncodeToString(bytes)
-import (
-	"auth-server/config"
-	"auth-server/internal/app/presenter/http/handler"
-	"auth-server/internal/app/presenter/http/server"
-	"auth-server/internal/app/service"
-	"auth-server/internal/app/service/user_service"
-	ms "auth-server/internal/app/store/mongo_store"
-	"auth-server/internal/app/utils/validators"
-	"auth-server/pkg/emailsender"
-	"context"
-	"github.com/spf13/viper"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"time"
-)
+
+func init() {
+	if err := gotenv.Load(".env"); err != nil {
+		log.Println(".env file not found.")
+	}
+}
 
 func main() {
-	err := config.Init()
-	if err != nil {
-		panic(err)
-	}
+	config := cfg.GetConfig()
 	//Init mongo
-	client, err := mongo.NewClient(options.Client().ApplyURI(viper.GetString("mongo.uri")))
+	client, err := mongo.NewClient(options.Client().ApplyURI(config.MongoURI))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,9 +48,11 @@ func main() {
 		log.Fatalf("Database ping error. %s", err.Error())
 	}
 	defer client.Disconnect(ctx)
-	db := client.Database(viper.GetString("mongo.name"))
+	db := client.Database(config.MongoDatabase)
+
 	//Init store
 	store := ms.NewStore(db)
+
 	//Init repositories
 	store.User()
 	store.Client()
@@ -55,26 +61,24 @@ func main() {
 	if err != nil {
 		log.Fatalf("Err in init user validator. Err message: %s", err.Error())
 	}
-	usvc, err := user_service.New(store, uvalidator)
-	if err != nil {
-		log.Fatalf("Err in init user service. Err message: %s", err.Error())
-	}
-	svm, err := service.NewManager(usvc, nil)
+
+	svm, err := services.NewManager(store, uvalidator)
 	if err != nil {
 		log.Fatalf("Err in init user manager. Err message: %s", err.Error())
 	}
 
-	email := viper.GetString("email.email")
-	password := viper.GetString("email.password")
-	host := viper.GetString("email.host")
-	port := viper.GetString("port")
-	companyName := viper.GetString("email.companyName")
+	emailSender := emailsender.New(
+		config.CompanyEmail,
+		config.CompanyEmailPassword,
+		config.EmailHost,
+		config.EmailHostPort,
+		config.CompanyName,
+		config.CompanyEmail,
+	)
 
-	emailSender := emailsender.New(email, password, host, port, companyName, email)
+	userHandler := handler.NewUserHandler(svm, emailSender)
 
-	userhandler := handler.NewUserHandler(svm, emailSender)
-
-	server, err := server.NewServer(svm, store, userhandler)
+	server, err := server.NewServer(svm, store, userHandler)
 	if err != nil {
 		log.Fatalf("Error creating server, err: %s", err.Error())
 	}

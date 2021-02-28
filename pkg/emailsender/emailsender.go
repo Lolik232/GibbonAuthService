@@ -33,7 +33,7 @@ func (e EmailSender) Send(ctx context.Context, subject, email, msgtype, msg stri
 		return errors.ErrInvalidArgument.New("Err. Params not be null.")
 	}
 	headers := make(map[string]string)
-	headers["From"] = e.companyEmail
+	headers["From"] = fmt.Sprintf("\"%s\"", e.companyName)
 	headers["To"] = email
 	headers["Subject"] = subject
 	headers["Content-Type"] = msgtype
@@ -41,7 +41,7 @@ func (e EmailSender) Send(ctx context.Context, subject, email, msgtype, msg stri
 	for k, h := range headers {
 		message += fmt.Sprintf("%s: %s\n", k, h)
 	}
-	message += "\n\r" + msg
+	message += "\n" + msg
 	if err := smtp.SendMail(e.host+e.port, e.auth, e.companyEmail, []string{email}, []byte(message)); err != nil {
 		if _, ok := err.(*textproto.Error); ok {
 			return errors.ErrInvalidArgument.Newf("Invalid email %s", email)

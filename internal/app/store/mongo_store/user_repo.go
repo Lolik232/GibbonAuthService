@@ -183,7 +183,8 @@ func (u UserRepo) FindByEmail(ctx context.Context, email string, params *store.U
 
 func (u UserRepo) Create(ctx context.Context, user *model.User) (string, error) {
 	usr := ToDb(user)
-	*usr.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+	createdTime := primitive.NewDateTimeFromTime(time.Now())
+	usr.CreatedAt = &createdTime
 	cur, err := u.usersCol.InsertOne(ctx, usr)
 	if err != nil {
 		switch err {

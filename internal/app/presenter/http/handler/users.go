@@ -3,29 +3,30 @@ package handler
 import (
 	"auth-server/config/filePath"
 	"auth-server/internal/app/model"
-	"auth-server/internal/app/service"
+	"auth-server/internal/app/service/services"
 	"auth-server/internal/app/store"
 	"auth-server/pkg/emailsender"
 	errors "auth-server/pkg/errors/types"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/spf13/viper"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
 )
 
 type UserHandler struct {
 	Handler
-	serviceManager *service.Manager
+	serviceManager *services.Manager
 	emailSender    emailsender.IEmailSender
 }
 
-func NewUserHandler(manager *service.Manager, sender emailsender.IEmailSender) *UserHandler {
+func NewUserHandler(manager *services.Manager, sender emailsender.IEmailSender) *UserHandler {
 	return &UserHandler{
 		Handler:        Handler{},
 		serviceManager: manager,
@@ -87,13 +88,14 @@ func (u UserHandler) getUserByID() http.HandlerFunc {
 		user, err := u.serviceManager.User.FindUserByID(r.Context(), userId, params)
 		defer func() {
 			since := time.Now().Sub(t).Milliseconds()
-			log.Printf("Time for req: %d", since)
+			log.Printf("Time for req: %d ms", since)
 		}()
 		if err != nil {
 			u.error(w, r, err)
 			return
 		}
-		u.respondJson(w, r, http.StatusOK, user)
+		responce := model.CreateOneOkResponce(user)
+		u.respondJson(w, r, http.StatusOK, responce)
 	}
 }
 func (u UserHandler) getUserByName() http.HandlerFunc {
@@ -107,7 +109,8 @@ func (u UserHandler) getUserByName() http.HandlerFunc {
 			u.error(w, r, err)
 			return
 		}
-		u.respondJson(w, r, http.StatusOK, user)
+		responce := model.CreateOneOkResponce(user)
+		u.respondJson(w, r, http.StatusOK, responce)
 	}
 }
 
@@ -165,7 +168,7 @@ func (u UserHandler) register() http.HandlerFunc {
 			return
 		}
 		msg := buf.String()
-		err = u.emailSender.Send(r.Context(), "Confirmation email", user.Email, "text/html", msg)
+		err = u.emailSender.Send(r.Context(), "Confirmation email", user.Email, "text/html; charset=utf-8", msg)
 		if err != nil {
 			log.Println(err)
 			err = u.serviceManager.User.DeleteByName(r.Context(), user.UserName)
@@ -175,6 +178,7 @@ func (u UserHandler) register() http.HandlerFunc {
 			u.error(w, r, err)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -187,5 +191,7 @@ func (u UserHandler) confirmEmail() http.HandlerFunc {
 			u.error(w, r, err)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
+		return
 	}
 }

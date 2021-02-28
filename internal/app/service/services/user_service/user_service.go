@@ -165,6 +165,7 @@ func (u *UserService) GenerateEmailConfToken(ctx context.Context, userID string)
 	token, err := generateEmailConfToken(userID, key)
 	if err != nil {
 		log.Printf("Error in generation token %s", err.Error())
+		return "", err
 	}
 	return token, nil
 }

@@ -78,7 +78,11 @@ func (u UserValidator) Validate(ctx context.Context, service service.UserFinder,
 			return errors.ErrInvalidArgument.Newf("Error in validation. Email already taken.")
 		}
 		if err != nil {
-			return err
+			switch errors.GetType(err) {
+			case errors.ErrInvalidArgument:
+			default:
+				return err
+			}
 		}
 	}
 	if UniqueUsername {
@@ -87,7 +91,11 @@ func (u UserValidator) Validate(ctx context.Context, service service.UserFinder,
 			return errors.ErrInvalidArgument.Newf("Error in validation. Username already taken.")
 		}
 		if err != nil {
-			return err
+			switch errors.GetType(err) {
+			case errors.ErrInvalidArgument:
+			default:
+				return err
+			}
 		}
 	}
 	if len(user.Password) < u.params.PassMinLength {
@@ -96,7 +104,7 @@ func (u UserValidator) Validate(ctx context.Context, service service.UserFinder,
 	if len(user.UserName) < u.params.UsernameMinLength {
 		return errors.ErrInvalidArgument.Newf("Error in validation. Username too short, min length is %d", u.params.UsernameMinLength)
 	}
-	if len(user.UserName) > u.params.UsernameMinLength {
+	if len(user.UserName) > u.params.UsernameMaxLength {
 		return errors.ErrInvalidArgument.Newf("Error in validation. Username too long, max length is %d", u.params.UsernameMaxLength)
 	}
 	if ok := u.params.UserNameAllowedSymbols.MatchString(user.UserName); !ok {

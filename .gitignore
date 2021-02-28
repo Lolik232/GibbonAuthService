@@ -1,9 +1,11 @@
 #ide files
 .idea
 
-
+.env
 #prod config files
 config.yml
 config.yaml
+#build files.
 *.exe
+/.bin/
 .bin

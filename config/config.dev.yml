@@ -3,12 +3,12 @@ port: 8000
 jwt:
   key: "superKey"
 
-
+domain: "https://gibbonstudio.somee.com"
 email:
   email: "redWhiteGibbonStudio@gmail.com"
   password: "gibbonstudio711259Kk"
   host: "smtp.gmail.com"
-  port: ":465"
+  port: ":587"
   companyName: "Gibbon Studio"
 
 

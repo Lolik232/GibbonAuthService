@@ -44,7 +44,7 @@ func decodeEmailConfToken(token, key string) (string, int64, error) {
 		return "", 0, err
 	}
 	decodedToken := base64.StdEncoding.EncodeToString(decodedTokenBytes)
-	data := strings.Split(decodedToken, "/")
+	data := strings.Split(decodedToken, "\\")
 	userID := data[0]
 	seconds, err := time.ParseDuration(data[1] + "s")
 	if err != nil {
@@ -55,16 +55,13 @@ func decodeEmailConfToken(token, key string) (string, int64, error) {
 }
 
 func generateEmailConfToken(userID, key string) (string, error) {
-	data := fmt.Sprintf("%s/%d", userID, time.Now().Add(24*time.Hour).Unix())
+	data := fmt.Sprintf("%s\\%d", userID, time.Now().Add(24*time.Hour).Unix())
 	//log.Printf("time is %s", data)
 	keyHex, err := hex.DecodeString(key)
 	if err != nil {
 		return "", err
 	}
 	plainText, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		return "", err
-	}
 	block, err := aes.NewCipher(keyHex)
 	if err != nil {
 		return "", err
