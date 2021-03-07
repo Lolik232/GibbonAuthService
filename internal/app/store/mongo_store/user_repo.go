@@ -85,7 +85,6 @@ func (u UserRepo) fetch(ctx context.Context, query bson.M, params *store.UserFie
 	if params == nil {
 		params = new(store.UserFields)
 	}
-
 	projection := bson.M{}
 	projection["_id"] = true
 	if params.UserName {
@@ -103,6 +102,9 @@ func (u UserRepo) fetch(ctx context.Context, query bson.M, params *store.UserFie
 
 	if params.UserRoles {
 		projection["user_info"] = params.UserRoles
+	}
+	if params.UserPasswordHash {
+		projection["password_hash"] = params.UserPasswordHash
 	}
 	var usr *UserClient
 	if params.UserSessions == false {

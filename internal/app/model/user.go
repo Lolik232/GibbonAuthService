@@ -25,8 +25,8 @@ func (u *User) Sanitize() {
 }
 func (u *User) SanitizeForRegistration() {
 	u.EmailConfirmed = false
-	u.PasswordHash = ""
 	u.UserSessions = nil
+	u.Password = ""
 	u.Roles = nil
 	u.ID = ""
 }

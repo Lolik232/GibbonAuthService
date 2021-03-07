@@ -6,12 +6,13 @@ import (
 )
 
 const (
-	ParamUserName     = "username"
-	ParamEmail        = "email"
-	ParamCreatedAt    = "created_at"
-	ParamUserInfo     = "user_info"
-	ParamUserSessions = "user_sessions"
-	ParamUserRoles    = "user_roles"
+	ParamUserName         = "username"
+	ParamEmail            = "email"
+	ParamCreatedAt        = "created_at"
+	ParamUserInfo         = "user_info"
+	ParamUserSessions     = "user_sessions"
+	ParamUserRoles        = "user_roles"
+	ParamUserPasswordHash = "password_hash"
 )
 
 const (
@@ -48,19 +49,22 @@ type (
 	}
 
 	UserFields struct {
-		UserName     bool `json:"username,omitempty"`
-		Email        bool `json:"email,omitempty"`
-		CreatedAt    bool `json:"created_at,omitempty"`
-		UserInfo     bool `json:"user_info,omitempty"`
-		UserSessions bool `json:"user_sessions,omitempty"`
-		UserRoles    bool `json:"user_roles,omitempty"`
+		UserName         bool `json:"username,omitempty"`
+		Email            bool `json:"email,omitempty"`
+		CreatedAt        bool `json:"created_at,omitempty"`
+		UserInfo         bool `json:"user_info,omitempty"`
+		UserSessions     bool `json:"user_sessions,omitempty"`
+		UserRoles        bool `json:"user_roles,omitempty"`
+		UserPasswordHash bool `json:"-"`
 	}
 
 	//ClientRepository interface
 	ClientRepository interface {
 		//CRUD methods
 		FindById(ctx context.Context, id string) (*model.Client, error)
+		CreateRefToken(ctx context.Context, sessionID, clientID string, refToken *model.ClientRefToken) (string, error)
 		FindRefToken(ctx context.Context, clientID, sessionID, refToken string) (*model.ClientRefToken, error)
 		CheckRefToken(ctx context.Context, clientID, sessionID, refToken string) error
+		DeleteRefToken(ctx context.Context, clientID, sessionID, refToken string) error
 	}
 )

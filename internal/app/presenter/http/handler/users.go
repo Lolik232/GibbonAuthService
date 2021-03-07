@@ -70,6 +70,13 @@ func parseUserParams(params string) *store.UserFields {
 func (u UserHandler) ConfigureRoutes(router *mux.Router) {
 
 	users := router.PathPrefix("/users").Subrouter()
+	auth := users.PathPrefix("/").Subrouter()
+	auth.HandleFunc("/foo", func(w http.ResponseWriter, r *http.Request) {
+		mp := map[string]string{"foo": "bar"}
+		responce := model.CreateOneOkResponce(mp)
+		u.respondJson(w, r, http.StatusOK, responce)
+		return
+	})
 	//get user
 	users.HandleFunc("/get/id/{id}", u.getUserByID()).Methods(http.MethodGet)
 	users.HandleFunc("/get/username/{username}", u.getUserByName()).Methods(http.MethodGet)

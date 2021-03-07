@@ -21,6 +21,8 @@ type Config struct {
 	CompanyName          string
 }
 
+var Cfg = GetConfig()
+
 func GetConfig() *Config {
 
 	return &Config{

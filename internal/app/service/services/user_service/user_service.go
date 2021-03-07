@@ -1,12 +1,14 @@
 package user_service
 
 import (
+	cfg "auth-server/internal/app/config"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/store"
 	"auth-server/internal/app/utils/validators"
 	errors "auth-server/pkg/errors/types"
 	"context"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"strings"
 	"time"
@@ -15,6 +17,18 @@ import (
 type UserService struct {
 	store         store.Store
 	userValidator validators.IUserValidator
+}
+
+func (u *UserService) hashUserPassword(passBytes []byte) ([]byte, error) {
+	bytes, err := bcrypt.GenerateFromPassword(passBytes, bcrypt.MinCost)
+	if err != nil {
+		return nil, errors.NoType.Wrap(err, "Err generate hash password.")
+	}
+	return bytes, nil
+}
+func (u *UserService) compareHashAndPassword(hash, pass []byte) error {
+	err := bcrypt.CompareHashAndPassword(hash, pass)
+	return err
 }
 
 func New(store store.Store, uvalidator validators.IUserValidator) (*UserService, error) {
@@ -90,8 +104,7 @@ func mapUserInfo(info map[string]string) map[string]string {
 
 func (u *UserService) Registration(ctx context.Context, user *model.User) (string, error) {
 	userInfo := mapUserInfo(user.UserInfo)
-	user.SanitizeForRegistration()
-	user.UserInfo = userInfo
+
 	err := u.userValidator.Validate(ctx, u, user)
 	if err != nil {
 		switch errors.GetType(err) {
@@ -102,6 +115,15 @@ func (u *UserService) Registration(ctx context.Context, user *model.User) (strin
 			return "", errors.NoType.Newf("")
 		}
 	}
+	passBytes := []byte(user.Password)
+	passHash, err := u.hashUserPassword(passBytes)
+	if err != nil {
+		return "", err
+	}
+	user.PasswordHash = string(passHash)
+	user.SanitizeForRegistration()
+
+	user.UserInfo = userInfo
 
 	id, err := u.store.User().Create(ctx, user)
 	if err != nil {
@@ -144,12 +166,36 @@ func (u *UserService) ConfirmEmail(ctx context.Context, userID, token string) er
 	return nil
 }
 
+//TODO: Implement FindUserSessions method
 func (u *UserService) FindUserSessions(ctx context.Context, userID string) (*[]model.UserSession, error) {
 	panic("implement me")
 }
 
-func (u UserService) Authenticate(ctx context.Context, login, password, clientID string) (*model.User, *model.ClientRefToken, error) {
-	panic("implement me")
+func (u *UserService) Authenticate(ctx context.Context, login, password, clientID string) (*model.User, *model.ClientRefToken, error) {
+	fields := store.UserFields{
+		UserName:         true,
+		Email:            true,
+		CreatedAt:        false,
+		UserInfo:         false,
+		UserSessions:     false,
+		UserRoles:        false,
+		UserPasswordHash: true,
+	}
+	user, err := u.FindUserByLogin(ctx, login, &fields)
+	if err != nil {
+		switch errors.GetType(err) {
+		case errors.ErrInvalidArgument:
+			return nil, nil, errors.ErrInvalidPasswordOrUsername.New("")
+		}
+		return nil, nil, err
+	}
+	err = u.compareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return nil, nil, errors.ErrInvalidPasswordOrUsername.New("")
+	}
+	user.Sanitize()
+	panic("Implement me")
+	//return user, nil, nil
 }
 
 func (u *UserService) UpdateRefToken(ctx context.Context, userID, clientID, refToken string) (*model.ClientRefToken, error) {
@@ -161,7 +207,7 @@ func (u *UserService) SignOut(ctx context.Context, userID, sessionID string) err
 }
 
 func (u *UserService) GenerateEmailConfToken(ctx context.Context, userID string) (string, error) {
-	key := viper.GetString("keys.email_conf_key")
+	key := cfg.Cfg.EmailConfKey
 	token, err := generateEmailConfToken(userID, key)
 	if err != nil {
 		log.Printf("Error in generation token %s", err.Error())

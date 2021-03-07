@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+//TODO:Implement client repository.
 //Client represent the "Clients" collection
 type Client struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`
