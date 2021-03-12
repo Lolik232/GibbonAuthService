@@ -1,0 +1,22 @@
+[
+    {
+        "createIndexes":"users",
+        "indexes":[
+            {
+                "key":{
+                    "username":1
+                },
+                "background":"true",
+                "name":"username_sort_by_asc",
+                "unique":true
+            },
+            {
+                "key":{
+                    "email":1
+                },
+                "background":"true",
+                "name":"email_sort_by_asc_and_unique",
+                "unique":true
+            }]
+    }
+]

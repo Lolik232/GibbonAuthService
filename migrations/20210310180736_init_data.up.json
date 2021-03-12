@@ -1,0 +1,18 @@
+[
+    {
+        "insert":"users",
+        "documents":[
+            {
+                    "username":"user",
+                    "email":"example@example.org",
+                    "password_hash":"without_password",
+                    "userinfo":{
+                        "first_name":"first name",
+                        "last_name":"last name",
+                        "mid_name":"mid name" 
+                    }
+
+            }
+        ]
+    }
+]

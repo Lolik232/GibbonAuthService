@@ -16,8 +16,8 @@ type Handler struct {
 }
 
 func (h Handler) respondJson(w http.ResponseWriter, r *http.Request, code int, data interface{}) {
-	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	if data != nil {
 		json.NewEncoder(w).Encode(data)
 	}

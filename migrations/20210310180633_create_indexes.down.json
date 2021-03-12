@@ -1,0 +1,10 @@
+[
+    {
+        "dropIndexes":"users",
+        "index":"username_sort_by_asc"
+    },
+    {
+        "dropIndexes":"users",
+        "index":"email_sort_by_asc_and_unique"
+    }
+]
