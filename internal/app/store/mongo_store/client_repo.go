@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-//TODO:Implement client repository.
+//TODO:Testing client repository
 //Client represent the "Clients" collection
 type Client struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty"`
@@ -132,13 +132,84 @@ func (c ClientRepo) CheckRefToken(ctx context.Context, clientID, sessionID, refT
 	return true, nil
 }
 
-func (c ClientRepo) CreateRefToken(ctx context.Context, sessionID, clientID string, refToken *model.ClientRefToken) (string, error) {
+func (c *ClientRepo) CreateRefToken(ctx context.Context, sessionID, clientID string, refToken *model.ClientRefToken) error {
+	clientObjectID, err := primitive.ObjectIDFromHex(clientID)
+	sessionObjectID, err := primitive.ObjectIDFromHex(refToken.SessionID)
 
-	panic("implement me")
+	if err != nil {
+		return nil
+	}
+	query := bson.M{
+		"_id": clientObjectID,
+	}
+	pullUpdate := bson.M{
+		"$pull": bson.M{
+			"ref_tokens": bson.M{
+				"session_id": sessionObjectID,
+			},
+		},
+	}
+
+	dbRefToken := ToDbRefToken(refToken)
+	_, err = c.clientsCol.UpdateOne(ctx, query, pullUpdate)
+	if err != nil {
+		switch err {
+		case mongo.ErrNoDocuments:
+			return errors.ErrInvalidArgument.New("Invalid clientID")
+		default:
+			return errors.NoType.New("")
+		}
+	}
+	update := bson.M{
+		"$push": bson.M{
+			"ref_tokens": dbRefToken,
+		},
+	}
+	res, err := c.clientsCol.UpdateOne(ctx, query, update)
+
+	if err != nil {
+		return errors.NoType.Wrap(err, "")
+	}
+	if res.MatchedCount == 0 {
+		return errors.ErrInvalidArgument.Newf("Invalid client ID %s", clientID)
+	}
+
+	if res.ModifiedCount == 0 {
+		return errors.NoType.New("")
+	}
+
+	return nil
 }
 
-func (c ClientRepo) DeleteRefToken(ctx context.Context, clientID, sessionID, refToken string) error {
-	panic("implement me")
+func (c *ClientRepo) DeleteRefToken(ctx context.Context, clientID, sessionID, refToken string) error {
+	clientObjectID, err := primitive.ObjectIDFromHex(clientID)
+	//sessionObjectID, err := primitive.ObjectIDFromHex(sessionID)
+
+	if err != nil {
+		return nil
+	}
+	query := bson.M{
+		"_id": clientObjectID,
+	}
+	pullUpdate := bson.M{
+		"$pull": bson.M{
+			"ref_tokens": bson.M{
+				"refToken": refToken,
+			},
+		},
+	}
+	res, err := c.clientsCol.UpdateOne(ctx, query, pullUpdate)
+	if err != nil {
+		return errors.NoType.Wrap(err, "")
+	}
+
+	if res.MatchedCount == 0 {
+		return errors.ErrInvalidArgument.Newf("Invalid client id %s", clientID)
+	}
+	if res.ModifiedCount == 0 {
+		return errors.ErrInvalidArgument.New("Invalid ref token")
+	}
+	return nil
 }
 
 func ToClientRefToken(dbRefToken *RefToken) *model.ClientRefToken {
@@ -148,6 +219,18 @@ func ToClientRefToken(dbRefToken *RefToken) *model.ClientRefToken {
 	return &model.ClientRefToken{
 		SessionID: sessionID,
 		RefToken:  dbRefToken.RefToken,
+		ExpIn:     expIn,
+		CreatedAt: createdAt,
+	}
+}
+func ToDbRefToken(clientRefToken *model.ClientRefToken) *RefToken {
+	sessionID, _ := primitive.ObjectIDFromHex(clientRefToken.SessionID)
+	expIn := primitive.NewDateTimeFromTime(clientRefToken.ExpIn)
+	createdAt := primitive.NewDateTimeFromTime(clientRefToken.CreatedAt)
+
+	return &RefToken{
+		SessionID: sessionID,
+		RefToken:  clientRefToken.RefToken,
 		ExpIn:     expIn,
 		CreatedAt: createdAt,
 	}
