@@ -1,10 +1,12 @@
 package mongo_store
 
 import (
+	"auth-server/internal/app/config"
 	"auth-server/internal/app/model"
 	"auth-server/internal/app/store"
 	errors "auth-server/pkg/errors/types"
 	"context"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -320,6 +322,87 @@ func (u UserRepo) CheckPassByEmail(ctx context.Context, email, passwordHash stri
 	if usr.Email != email {
 		return errors.ErrInvalidPasswordOrUsername.New("")
 	}
+	return nil
+}
+
+func (u *UserRepo) CreateSession(ctx context.Context, userID string) (string, error) {
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return "", errors.ErrInvalidArgument.Newf("Invalid user ID %s", userID)
+	}
+
+	client := fmt.Sprintf("%v", ctx.Value(config.ContextClientIDKey))
+	clientObjectID, _ := primitive.ObjectIDFromHex(client)
+	device := fmt.Sprintf("%v", ctx.Value(config.ContextDeviceKey))
+
+	query := bson.M{
+		"_id": userObjectID,
+	}
+
+	sessionObjectID := primitive.NewObjectID()
+
+	session := UserSession{
+		ID:             sessionObjectID,
+		ClientID:       clientObjectID,
+		Device:         device,
+		LastActiveDate: primitive.NewDateTimeFromTime(time.Now()),
+	}
+
+	update := bson.M{
+		"$push": bson.M{
+			"user_sessions": session,
+		},
+	}
+
+	res, err := u.usersCol.UpdateOne(ctx, query, update)
+
+	if err != nil {
+		switch err {
+		case mongo.ErrNoDocuments:
+			return "", errors.ErrInvalidArgument.Newf("Invalid user ID %s", userID)
+		default:
+			return "", errors.NoType.Wrap(err, "")
+		}
+	}
+	if res.MatchedCount == 0 || res.ModifiedCount == 0 {
+		return "", errors.ErrInvalidArgument.Newf("Invalid user ID %s", userID)
+	}
+	return sessionObjectID.Hex(), nil
+}
+func (u *UserRepo) DeleteSession(ctx context.Context, userID, sessionID string) error {
+
+	sessionObjectID, err := primitive.ObjectIDFromHex(sessionID)
+	if err != nil {
+		return errors.ErrInvalidArgument.Newf("Invalid session ID %s", sessionID)
+	}
+	userObjectID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return errors.ErrInvalidArgument.Newf("Invalid user ID %s", userID)
+	}
+
+	query := bson.M{
+		"_id": userObjectID,
+	}
+
+	update := bson.M{
+		"$pull": bson.M{
+			"user_sessions": sessionObjectID,
+		},
+	}
+
+	res, err := u.usersCol.UpdateOne(ctx, query, update)
+	if err != nil {
+		switch err {
+		case mongo.ErrNoDocuments:
+			return errors.ErrInvalidArgument.Newf("Invalid userID %s", userID)
+		default:
+			return errors.NoType.Wrap(err, "")
+		}
+	}
+	if res.ModifiedCount == 0 || res.MatchedCount == 0 {
+		return errors.ErrInvalidArgument.New("Invalid user or session ID")
+	}
+
 	return nil
 }
 

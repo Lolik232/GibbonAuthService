@@ -132,7 +132,7 @@ func (c ClientRepo) CheckRefToken(ctx context.Context, clientID, sessionID, refT
 	return true, nil
 }
 
-func (c *ClientRepo) CreateRefToken(ctx context.Context, sessionID, clientID string, refToken *model.ClientRefToken) error {
+func (c *ClientRepo) CreateRefToken(ctx context.Context, clientID string, refToken *model.ClientRefToken) error {
 	clientObjectID, err := primitive.ObjectIDFromHex(clientID)
 	sessionObjectID, err := primitive.ObjectIDFromHex(refToken.SessionID)
 

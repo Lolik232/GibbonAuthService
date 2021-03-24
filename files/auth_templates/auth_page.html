@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>GibbonAuth</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1,heigth=device-height'>
+    <link rel='stylesheet' type='text/css' media='screen' href='auth_page.css'>
+    <link rel="shortcut icon" type="image/png" href="favicon.png" />
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <div class="auth_card">
+            <form method="POST" action="login">
+                <div class="card_header" style="-ms-user-select:none;
+                -moz-user-select:none; 
+                -khtml-user-select:none;
+                -webkit-user-select:none;
+                user-select:none">
+                    <h2 style="margin: 0;">Gibbon Studio</h2>
+                    <p style="margin: 0;">Authorization on <span style="color:#F2C94C ;">{{.Title}}</span></p>
+                </div>
+                <div class="card_body" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div class="input" style="display: flex; justify-content: center; width:100%">
+                        <input type="text" placeholder="Login" />
+                    </div>
+                    <div class="input" style="display: flex; justify-content: center; width:100%">
+                        <input type="text" placeholder="Password" />
+                    </div>
+                </div>
+                <div class="card_footer"
+                    style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <button id="login_button" type="submit">Login</button>
+                   <div>
+                   <a href={{.RegistrationLink}} style="margin: 10px; font-size: 0.65rem;-ms-user-select:none;
+                    -moz-user-select:none; 
+                    -khtml-user-select:none;
+                    -webkit-user-select:none;
+                    user-select:none">Registration</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

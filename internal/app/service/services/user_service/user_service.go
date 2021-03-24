@@ -181,6 +181,7 @@ func (u *UserService) Authenticate(ctx context.Context, login, password, clientI
 		UserRoles:        false,
 		UserPasswordHash: true,
 	}
+
 	user, err := u.FindUserByLogin(ctx, login, &fields)
 	if err != nil {
 		switch errors.GetType(err) {
@@ -190,12 +191,30 @@ func (u *UserService) Authenticate(ctx context.Context, login, password, clientI
 		return nil, nil, err
 	}
 	err = u.compareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+
 	if err != nil {
 		return nil, nil, errors.ErrInvalidPasswordOrUsername.New("")
 	}
 	user.Sanitize()
-	panic("Implement me")
-	//return user, nil, nil
+
+	sessionID, err := u.store.User().CreateSession(ctx, user.ID)
+	if err != nil {
+		return nil, nil, err
+	}
+	refTokenString := generateRefreshToken()
+
+	refToken := model.ClientRefToken{
+		SessionID: sessionID,
+		RefToken:  refTokenString,
+		ExpIn:     time.Now().Add(720 * time.Hour),
+		CreatedAt: time.Now(),
+	}
+
+	err = u.store.Client().CreateRefToken(ctx, clientID, &refToken)
+	if err != nil {
+		return nil, nil, err
+	}
+	return user, &refToken, nil
 }
 
 func (u *UserService) UpdateRefToken(ctx context.Context, userID, clientID, refToken string) (*model.ClientRefToken, error) {

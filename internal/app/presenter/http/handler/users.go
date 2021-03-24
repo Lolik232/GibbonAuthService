@@ -83,6 +83,7 @@ func (u UserHandler) ConfigureRoutes(router *mux.Router) {
 	//register
 	users.HandleFunc("/register", u.register()).Methods(http.MethodPost)
 	users.HandleFunc("/email/confirm/{token}", u.confirmEmail()).Methods(http.MethodGet)
+
 }
 
 func (u UserHandler) getUserByID() http.HandlerFunc {

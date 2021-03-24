@@ -37,6 +37,8 @@ type (
 		Create(ctx context.Context, user *model.User) (string, error)
 		DeleteById(ctx context.Context, userID string) error
 		DeleteByName(ctx context.Context, userID string) error
+		CreateSession(ctx context.Context, userID string) (string, error)
+		DeleteSession(ctx context.Context, userID, sessionID string) error
 	}
 	UserPassChecker interface {
 		CheckPassByID(ctx context.Context, userID, passwordHash string) error
@@ -62,9 +64,9 @@ type (
 	ClientRepository interface {
 		//CRUD methods
 		FindById(ctx context.Context, id string) (*model.Client, error)
-		CreateRefToken(ctx context.Context, sessionID, clientID string, refToken *model.ClientRefToken) (string, error)
+		CreateRefToken(ctx context.Context, clientID string, refToken *model.ClientRefToken) error
 		FindRefToken(ctx context.Context, clientID, sessionID, refToken string) (*model.ClientRefToken, error)
-		CheckRefToken(ctx context.Context, clientID, sessionID, refToken string) error
+		CheckRefToken(ctx context.Context, clientID, sessionID, refToken string) (bool, error)
 		DeleteRefToken(ctx context.Context, clientID, sessionID, refToken string) error
 	}
 )

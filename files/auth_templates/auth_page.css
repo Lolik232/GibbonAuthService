@@ -1,0 +1,161 @@
+body {
+    font-family: 'Rubik', sans-serif !important;
+    font-weight: 400 !important;
+    height: 100% !important;
+    width: 100% !important;
+    display: block;
+    background-image: url(https://sun9-41.userapi.com/impf/Y7wGGZtXmWINL04V1tCA4yqRpB7sM76aYKngOA/udqpHkQ36CY.jpg?size=1450x1024&quality=96&sign=2e02ffd4947749b1ab855e4be8842f8c&type=album);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-origin: border-box;
+    margin: 0;
+}
+
+
+html {
+    font-family: 'Rubik', sans-serif !important;
+    padding: 0;
+    display: block;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+.container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    color: #333333;
+}
+
+a {
+    transition-duration: 0.5s;
+    text-decoration: none;
+    color: #828282;
+}
+
+a:hover {
+    transition-duration: 0.5s;
+    color: #F2C94C;
+}
+
+.auth_card {
+    padding: 2rem 1rem;
+    width: 70%;
+    min-width: 250px;
+    /* min-height: 300px; */
+    max-width: 600px;
+    /* max-height: 500px; */
+    background-color: #ffff;
+    display: block;
+    /* flex-direction: column; */
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.card_header p {
+    font-size: 0.7rem;
+    color: #828282;
+}
+
+.card_header {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 15%;
+    padding: 0.5rem;
+}
+
+div .input {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+input {
+    background: #F2F2F2;
+    /* MainTextColor */
+    width: 97%;
+    padding: 0.23rem 0.23rem 0.23rem 0.5rem;
+    display: flex;
+    font-size: 0.7rem;
+    height: 1.2rem;
+    border: 1px solid #E0E0E0;
+    border-radius: 5px;
+    color: #4F4F4F;
+}
+
+input:focus {
+    transition-property: border;
+    transition-duration: 0.5s;
+    border: 1px solid #4F4F4F !important;
+    outline: none;
+}
+
+#login_button {
+    background: #333333;
+    border: none;
+    border-radius: 8px;
+    color: #ffff;
+    padding: 10px 10px 10px 10px;
+    outline: none;
+    width: 30%;
+    height: fit-content;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Rubik', sans-serif !important;
+    font-size: 0.7rem;
+    transition-property: background-color;
+    transition-duration: 0.5s;
+}
+
+#login_button:hover {
+    transition-property: background-color;
+    transition-duration: 0.5s;
+    background-color: #505050;
+}
+
+.card_body {
+    height: 70% !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem;
+}
+
+
+
+
+
+
+@media screen and (min-width:200px) and (max-width:450px) {
+    html {
+        font-size: 18px !important;
+    }
+}
+
+@media screen and (min-width:451px) and (max-width:600px) {
+    html {
+        font-size: 20px !important;
+    }
+}
+
+@media screen and (min-width:601px) {
+    html {
+        font-size: 24px !important;
+    }
+}
+
+@media screen and (min-width:1000px) {
+    html {
+        font-size: 30px !important;
+    }
+}
